@@ -1,0 +1,498 @@
+/* =========================================================
+   ESTILO GERAL DO APP
+   Pensado para celular primeiro (mobile-first).
+   As cores ficam em variáveis no :root para facilitar mudar.
+   ========================================================= */
+
+:root {
+  --verde: #0f7a3d;
+  --verde-escuro: #0a5a2c;
+  --verde-claro: #e3f4ea;
+  --fundo: #f3f5f4;
+  --cartao: #ffffff;
+  --texto: #1b2420;
+  --texto-suave: #5e6b65;
+  --borda: #dde3e0;
+  --amarelo: #f5c400;
+  --vermelho: #d93a2b;
+  --azul: #1f6fd1;
+  --laranja: #ef8a17;
+  --raio: 14px;
+  --sombra: 0 1px 3px rgba(0, 0, 0, .08), 0 2px 8px rgba(0, 0, 0, .05);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a { color: var(--verde); }
+
+/* ---------- Topo ---------- */
+.topo {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  padding-top: calc(8px + env(safe-area-inset-top));
+  background: var(--verde);
+  color: #fff;
+}
+.topo h1 {
+  flex: 1;
+  margin: 0;
+  font-size: 1.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.topo-voltar, .topo-acao {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .15);
+  color: #fff;
+  font-size: 1.6rem;
+  line-height: 44px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+.topo-acao { font-size: 1.2rem; }
+
+main {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 12px 12px calc(90px + env(safe-area-inset-bottom));
+}
+
+/* ---------- Blocos comuns ---------- */
+.cartao {
+  background: var(--cartao);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.cartao h2, .cartao h3 { margin: 0 0 10px; font-size: 1.05rem; }
+.cartao-link { display: block; color: inherit; text-decoration: none; }
+.cartao-link:active { transform: scale(.99); }
+
+.suave { color: var(--texto-suave); font-size: .9rem; }
+.centro { text-align: center; }
+.linha { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.linha-entre { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.cresce { flex: 1; min-width: 0; }
+.vazio { text-align: center; color: var(--texto-suave); padding: 24px 8px; }
+.oculto { display: none !important; }
+
+/* ---------- Botões (grandes para usar com o dedo) ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 48px;
+  padding: 10px 16px;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--texto);
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+.btn:active { filter: brightness(.92); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-primario { background: var(--verde); border-color: var(--verde); color: #fff; }
+.btn-perigo { background: var(--vermelho); border-color: var(--vermelho); color: #fff; }
+.btn-aviso { background: var(--amarelo); border-color: var(--amarelo); color: #222; }
+.btn-azul { background: var(--azul); border-color: var(--azul); color: #fff; }
+.btn-pequeno { min-height: 36px; padding: 6px 10px; font-size: .9rem; border-radius: 10px; }
+.btn-bloco { width: 100%; }
+.btn-icone { min-width: 44px; padding: 6px; }
+
+.grupo-botoes { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.grupo-botoes > .btn { flex: 1 1 140px; }
+
+/* Botão flutuante (+) */
+.fab {
+  position: fixed;
+  right: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom));
+  z-index: 15;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--verde);
+  color: #fff;
+  font-size: 2rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .25);
+  cursor: pointer;
+}
+
+/* ---------- Formulários ---------- */
+label.campo { display: block; margin-bottom: 12px; font-weight: 600; font-size: .92rem; }
+label.campo > span { display: block; margin-bottom: 4px; }
+input, select, textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--texto);
+  font: inherit;
+  font-weight: normal;
+}
+input[type="color"] { padding: 4px; height: 46px; }
+input[type="checkbox"] { width: 22px; min-height: 22px; height: 22px; }
+textarea { min-height: 100px; resize: vertical; }
+.campos-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+.campos-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 10px; }
+.check { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; font-weight: 600; }
+
+/* ---------- Abas e chips ---------- */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 10px; }
+.chip {
+  flex: 0 0 auto;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--borda);
+  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--texto);
+}
+.chip.ativo { background: var(--verde); border-color: var(--verde); color: #fff; }
+
+.abas {
+  display: flex;
+  overflow-x: auto;
+  gap: 4px;
+  margin: 0 -12px 12px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--borda);
+}
+.aba {
+  flex: 0 0 auto;
+  padding: 12px 12px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--texto-suave);
+  text-decoration: none;
+  cursor: pointer;
+}
+.aba.ativo { color: var(--verde); border-bottom-color: var(--verde); }
+
+/* ---------- Etiquetas (badges) ---------- */
+.etiqueta {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 700;
+  background: var(--borda);
+  color: var(--texto);
+  vertical-align: middle;
+}
+.etiqueta.verde { background: var(--verde-claro); color: var(--verde-escuro); }
+.etiqueta.vermelha { background: #fde3e0; color: #a3271b; }
+.etiqueta.amarela { background: #fff4c2; color: #7a5d00; }
+.etiqueta.azul { background: #dfeafb; color: #174f96; }
+
+/* ---------- Escudo (bolinha colorida com a inicial) ---------- */
+.escudo {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: .95rem;
+  overflow: hidden;
+  border: 2px solid rgba(0, 0, 0, .08);
+}
+.escudo img { width: 100%; height: 100%; object-fit: cover; }
+.escudo.grande { width: 64px; height: 64px; font-size: 1.5rem; }
+
+/* ---------- Listas ---------- */
+.lista { list-style: none; margin: 0; padding: 0; }
+.lista > li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borda);
+}
+.lista > li:last-child { border-bottom: 0; }
+.lista a.item { display: flex; align-items: center; gap: 10px; flex: 1; color: inherit; text-decoration: none; min-width: 0; }
+.camisa {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--verde-claro);
+  color: var(--verde-escuro);
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---------- Cartão de jogo na tabela ---------- */
+.jogo {
+  display: block;
+  background: #fff;
+  border-radius: var(--raio);
+  box-shadow: var(--sombra);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+.jogo-info { display: flex; justify-content: space-between; gap: 6px; font-size: .8rem; color: var(--texto-suave); margin-bottom: 6px; }
+.jogo-times { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
+.jogo-time { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; }
+.jogo-time span.nome {
+  font-size: .9rem;
+  line-height: 1.2;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+}
+.jogo-time.fora { flex-direction: row-reverse; text-align: right; }
+.jogo-placar { font-size: 1.3rem; font-weight: 800; min-width: 70px; text-align: center; }
+.jogo-placar small { display: block; font-size: .7rem; font-weight: 600; color: var(--texto-suave); }
+.titulo-rodada { margin: 18px 4px 8px; font-size: .95rem; color: var(--texto-suave); text-transform: uppercase; letter-spacing: .03em; }
+
+/* ---------- Tabelas (classificação, estatísticas) ---------- */
+.tabela-rolagem { overflow-x: auto; }
+table.tabela { width: 100%; border-collapse: collapse; font-size: .9rem; }
+table.tabela th, table.tabela td { padding: 8px 6px; text-align: center; border-bottom: 1px solid var(--borda); white-space: nowrap; }
+table.tabela th { font-size: .75rem; color: var(--texto-suave); text-transform: uppercase; }
+table.tabela td.esq, table.tabela th.esq { text-align: left; }
+table.tabela td.time-celula { text-align: left; white-space: normal; }
+table.tabela tr.classifica td:first-child { box-shadow: inset 4px 0 0 var(--verde); }
+table.tabela a { color: inherit; text-decoration: none; }
+.time-mini { display: inline-flex; align-items: center; gap: 6px; }
+.time-mini .escudo { width: 24px; height: 24px; font-size: .7rem; }
+
+/* ---------- Chave do mata-mata ---------- */
+.chave { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.chave-coluna { flex: 0 0 220px; display: flex; flex-direction: column; justify-content: space-around; gap: 8px; }
+.chave-coluna h4 { margin: 0; font-size: .8rem; text-transform: uppercase; color: var(--texto-suave); text-align: center; }
+.chave-jogo { background: #fff; border-radius: 10px; box-shadow: var(--sombra); padding: 6px 10px; font-size: .88rem; text-decoration: none; color: inherit; display: block; }
+.chave-jogo div { display: flex; justify-content: space-between; gap: 6px; padding: 2px 0; }
+.chave-jogo .venceu { font-weight: 800; }
+
+/* ---------- Modal (janela por cima) ---------- */
+.modal-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, .45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 18px 18px 0 0;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  animation: subir .18s ease-out;
+}
+@media (min-width: 700px) {
+  .modal-fundo { align-items: center; }
+  .modal { border-radius: 18px; }
+}
+@keyframes subir { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal h2 { margin: 0 0 12px; font-size: 1.15rem; }
+.modal-botoes { display: flex; gap: 8px; margin-top: 14px; }
+.modal-botoes .btn { flex: 1; }
+
+/* ---------- Toasts (mensagens rápidas) ---------- */
+#toasts {
+  position: fixed;
+  left: 50%;
+  top: calc(68px + env(safe-area-inset-top));
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(92vw, 460px);
+  pointer-events: none;
+}
+.toast {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #222;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
+  animation: subir .2s ease-out;
+}
+.toast.erro { background: var(--vermelho); }
+.toast.aviso { background: var(--amarelo); color: #222; }
+.toast.ok { background: var(--verde); }
+
+/* =========================================================
+   SÚMULA AO VIVO
+   ========================================================= */
+.placar {
+  background: #13201a;
+  color: #fff;
+  border-radius: var(--raio);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.placar-linha { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
+.placar-time { text-align: center; min-width: 0; }
+.placar-time .nome { font-weight: 700; font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.placar-gols { font-size: 3.4rem; font-weight: 900; line-height: 1; margin: 4px 0; font-variant-numeric: tabular-nums; }
+.placar-centro { text-align: center; }
+.placar-periodo { font-size: .85rem; opacity: .8; }
+.cronometro { font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cronometro.fim { color: var(--amarelo); }
+.placar-penaltis { font-size: .85rem; color: var(--amarelo); font-weight: 700; }
+.placar-extra { display: flex; justify-content: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.contador {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .12);
+  font-size: .78rem;
+  font-weight: 700;
+}
+.contador.alerta { background: var(--vermelho); animation: piscar 1s infinite alternate; }
+.contador.usado { background: var(--laranja); }
+@keyframes piscar { from { opacity: 1; } to { opacity: .6; } }
+
+.controles-cronometro { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.controles-cronometro .btn { min-height: 54px; font-size: 1.05rem; }
+
+/* Duas colunas de botões, uma por time */
+.eventos-times { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.eventos-col { display: flex; flex-direction: column; gap: 6px; }
+.eventos-col .cab { font-weight: 700; text-align: center; padding: 6px; border-radius: 10px; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-evento { min-height: 56px; font-size: 1rem; width: 100%; }
+.btn-gol { background: var(--verde); border-color: var(--verde); color: #fff; font-size: 1.15rem; min-height: 64px; }
+.btn-amarelo { background: #fff8d6; border-color: var(--amarelo); }
+.btn-vermelho { background: #fde3e0; border-color: var(--vermelho); }
+.eventos-col .duplo { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+.aviso-faixa {
+  padding: 10px 12px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+.aviso-faixa.vermelha { background: #fde3e0; color: #8a1f15; }
+.aviso-faixa.amarela { background: #fff4c2; color: #6a5100; }
+.aviso-faixa.verde { background: var(--verde-claro); color: var(--verde-escuro); }
+
+/* Grade de camisas para escolher o jogador */
+.grade-jogadores { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.btn-jogador {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 74px;
+  padding: 6px;
+  border: 2px solid var(--borda);
+  border-radius: 12px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.btn-jogador b { font-size: 1.5rem; line-height: 1.1; }
+.btn-jogador small { font-size: .72rem; color: var(--texto-suave); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-jogador.selecionado { border-color: var(--verde); background: var(--verde-claro); }
+.btn-jogador:disabled { opacity: .45; cursor: not-allowed; background: #f2f2f2; }
+.btn-jogador .motivo { color: var(--vermelho); font-weight: 700; font-size: .66rem; }
+
+/* Linha do tempo de eventos */
+.linha-tempo { list-style: none; margin: 0; padding: 0; }
+.linha-tempo li { display: flex; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--borda); }
+.linha-tempo .minuto { flex: 0 0 52px; font-weight: 800; color: var(--texto-suave); font-variant-numeric: tabular-nums; }
+.linha-tempo .icone { flex: 0 0 26px; font-size: 1.2rem; text-align: center; }
+.cartao-ico { display: inline-block; width: 14px; height: 19px; border-radius: 3px; vertical-align: middle; }
+.cartao-ico.am { background: var(--amarelo); }
+.cartao-ico.vm { background: var(--vermelho); }
+
+/* =========================================================
+   RELATÓRIOS / IMPRESSÃO
+   ========================================================= */
+.folha {
+  background: #fff;
+  color: #000;
+  padding: 18px;
+  border-radius: 6px;
+  box-shadow: var(--sombra);
+  font-size: 13px;
+}
+.folha h1 { font-size: 20px; margin: 0 0 4px; text-align: center; }
+.folha h2 { font-size: 15px; margin: 16px 0 6px; border-bottom: 2px solid #000; padding-bottom: 2px; }
+.folha .sub { text-align: center; margin: 0 0 10px; }
+.folha table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+.folha th, .folha td { border: 1px solid #555; padding: 4px 6px; text-align: left; }
+.folha th { background: #e8e8e8; }
+.folha td.n, .folha th.n { text-align: center; width: 1%; white-space: nowrap; }
+.folha .placar-folha { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; text-align: center; margin: 10px 0; font-weight: 700; font-size: 16px; }
+.folha .placar-folha .gols { font-size: 32px; padding: 0 16px; }
+.folha .colunas { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.folha .colunas > div { min-width: 0; }
+@media (min-width: 700px) { .folha .colunas { grid-template-columns: 1fr 1fr; } }
+.folha .assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 20px; margin-top: 36px; }
+.folha .assinaturas div { border-top: 1px solid #000; text-align: center; padding-top: 4px; font-size: 12px; }
+.folha .rodape { margin-top: 18px; font-size: 11px; color: #555; text-align: center; }
+.folha .obs { border: 1px solid #555; min-height: 60px; padding: 6px; white-space: pre-wrap; }
+
+@media print {
+  @page { margin: 12mm; }
+  html, body { background: #fff; }
+  .nao-imprimir, .topo, .fab, #toasts { display: none !important; }
+  main { padding: 0; max-width: none; }
+  .folha { box-shadow: none; padding: 0; border-radius: 0; }
+  .folha .colunas { grid-template-columns: 1fr 1fr; }
+  .folha table { page-break-inside: auto; }
+  .folha tr { page-break-inside: avoid; }
+}
+
+/* ---------- Telas maiores (computador) ---------- */
+@media (min-width: 760px) {
+  .grade-cartoes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grade-cartoes > .cartao { margin-bottom: 0; }
+  .placar-gols { font-size: 4.5rem; }
+  .cronometro { font-size: 2.6rem; }
+}

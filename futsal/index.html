@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Futsal Súmula</title>
+  <meta name="description" content="Gestão de campeonatos de futsal infantil com súmula digital">
+  <meta name="theme-color" content="#0f7a3d">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+  <!-- Barra do topo: botão voltar + título da tela atual -->
+  <header class="topo nao-imprimir">
+    <button id="btn-voltar" class="topo-voltar" aria-label="Voltar">‹</button>
+    <h1 id="titulo-tela">Futsal Súmula</h1>
+    <a href="#/backup" class="topo-acao" aria-label="Backup">💾</a>
+  </header>
+
+  <!-- Aqui cada tela é desenhada pelo JavaScript -->
+  <main id="app"></main>
+
+  <!-- Área das mensagens rápidas (toasts) -->
+  <div id="toasts" class="nao-imprimir"></div>
+
+  <!-- Scripts na ordem certa: primeiro os ajudantes, depois as regras, depois as telas -->
+  <script src="js/util.js"></script>
+  <script src="js/dados.js"></script>
+  <script src="js/tabela.js"></script>
+  <script src="js/regras.js"></script>
+  <script src="js/exemplo.js"></script>
+  <script src="js/telas/inicio.js"></script>
+  <script src="js/telas/campeonato.js"></script>
+  <script src="js/telas/time.js"></script>
+  <script src="js/telas/sumula.js"></script>
+  <script src="js/telas/relatorios.js"></script>
+  <script src="js/telas/backup.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
