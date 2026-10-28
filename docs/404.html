@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Futsal Súmula mudou de endereço</title>
+  <link rel="canonical" href="https://futsal-sumula.web.app/">
+  <!-- Plano B: se o JavaScript não rodar, vai em 3 segundos -->
+  <meta http-equiv="refresh" content="3; url=https://futsal-sumula.web.app/">
+  <script>
+    // Endereço novo do app. O "#/..." do link antigo é mantido
+    // (ex.: um link direto para a classificação continua funcionando).
+    (function () {
+      var destino = 'https://futsal-sumula.web.app/' + (location.hash || '');
+      var ir = function () { location.replace(destino); };
+      // Desliga o app antigo deste endereço (service worker e cópias guardadas)
+      var limpar = [];
+      if ('serviceWorker' in navigator) {
+        limpar.push(navigator.serviceWorker.getRegistrations()
+          .then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }));
+      }
+      if (window.caches) {
+        limpar.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }));
+      }
+      Promise.all(limpar).catch(function () {}).then(ir);
+      setTimeout(ir, 1500); // não espera para sempre
+    })();
+  </script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; text-align: center; padding: 40px 16px; color: #1b2420; background: #f3f5f4; }
+    a { color: #0f7a3d; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <p style="font-size:3rem;margin:0">⚽</p>
+  <h1>O Futsal Súmula mudou de endereço</h1>
+  <p>Agora ele fica em <a href="https://futsal-sumula.web.app/">futsal-sumula.web.app</a>. Redirecionando…</p>
+  <p>Instalou o app no celular? Apague o ícone antigo e instale de novo pelo endereço novo.</p>
+</body>
+</html>
