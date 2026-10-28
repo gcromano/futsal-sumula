@@ -1,0 +1,32 @@
+# =========================================================
+# Arquivos que NÃO podem ir para o GitHub
+# (o repositório e o site são públicos)
+# =========================================================
+
+# Chaves PRIVADAS do Firebase (conta de serviço / Admin SDK).
+# Dão acesso TOTAL ao banco, ignorando as regras. Nunca publique.
+*serviceAccount*.json
+*service-account*.json
+*-firebase-adminsdk-*.json
+*.pem
+*.key
+.env
+.env.*
+
+# Backups exportados pelo app: têm nomes, telefones e datas de
+# nascimento de crianças.
+futsal-backup-*.json
+
+# Arquivos de importação (dados do campeonato; importe pelo app)
+dados-iniciais/
+
+# Ferramentas de desenvolvimento e testes
+# (firebase.json e .firebaserc PODEM ir: só dizem o que publicar e qual projeto usar)
+node_modules/
+.firebase/
+*-debug.log
+.claude/
+
+# Lixo do sistema
+.DS_Store
+Thumbs.db

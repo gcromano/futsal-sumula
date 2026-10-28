@@ -22,7 +22,7 @@ Faça tudo no **computador**, no Chrome, logado na conta Google que vai ser dona
 ## 3. Autorizar o endereço do site
 
 1. Ainda em **Authentication**, aba **Configurações** → **Domínios autorizados**.
-2. Clique **Adicionar domínio** e digite exatamente: `gcromano.github.io` → **Adicionar**.
+2. Clique **Adicionar domínio** e confira que `futsal-sumula.web.app` está na lista (o Firebase costuma já colocar).
 
 > Sem isso, o login no site mostra o erro "endereço não autorizado".
 > (`localhost` já vem autorizado, para testes no computador.)
@@ -88,15 +88,34 @@ cd ~/futsal && python3 -m http.server 8123
 
 Abra <http://localhost:8123>, clique em **👤 / Entrar com Google** e veja se entra.
 
-## 8. Publicar no GitHub
+## 8. Publicar o app
 
-Siga a seção **"Como subir pelo site do GitHub"** do `README.md`.
+O app é publicado no **Firebase Hosting** (<https://futsal-sumula.web.app>). Veja a seção
+**"Publicar o app (Firebase Hosting)"** do `README.md`.
 
 ---
 
+## 📱 Login no iPhone / Safari (recomendado, 5 minutos)
+
+O app está em `futsal-sumula.web.app`, mas o login do Google passa por `futsal-sumula.firebaseapp.com`.
+No computador funciona (abre uma janelinha), mas no **iPhone com o app instalado** e em navegadores que
+isolam os dados de cada site, o login pode falhar com a mensagem *"missing initial state"*.
+A solução é o login usar o **mesmo endereço do app**. Para isso:
+
+1. Abra <https://console.cloud.google.com/apis/credentials?project=futsal-sumula> (mesma conta Google do Firebase).
+2. Em **IDs do cliente OAuth 2.0**, clique em **Web client (auto created by Google Service)**.
+3. Em **Origens JavaScript autorizadas** → **Adicionar URI** → `https://futsal-sumula.web.app`
+4. Em **URIs de redirecionamento autorizados** → **Adicionar URI** → `https://futsal-sumula.web.app/__/auth/handler`
+5. **Salvar** e esperar uns 5 minutos.
+6. Em `js/firebase-config.js`, troque `App.loginNoMesmoEndereco = false;` por `true` e publique
+   (`npx --yes firebase-tools@13 deploy --only hosting`). Ou peça para o Claude fazer o passo 6.
+
+> Se fizer o passo 6 sem os passos 1–5, o Google mostra **"Erro 400: redirect_uri_mismatch"** e ninguém entra.
+> Para desfazer: volte para `false` e publique de novo.
+
 ## 👑 Primeiro acesso: virar admin da Copa CES
 
-1. No **computador**, abra <https://gcromano.github.io/futsal-sumula/>.
+1. No **computador**, abra <https://futsal-sumula.web.app/>.
 2. Clique em **Entrar com Google** e entre com a sua conta.
 3. Toque no **💾** (topo) → **Importar arquivo** → escolha
    `~/futsal/dados-iniciais/copa-ces-2026.json` → **Importar**.
@@ -124,7 +143,7 @@ Cada gravação guarda o e-mail de quem fez e a hora do servidor. Ninguém conse
 
 | Mensagem / situação | O que fazer |
 |---|---|
-| "Este endereço não está autorizado" | Passo 3: adicionar `gcromano.github.io` |
+| "Este endereço não está autorizado" | Passo 3: conferir `futsal-sumula.web.app` |
 | "O login com Google não está ativado" | Passo 2 |
 | Entra, mas não aparece nada / "sem permissão" | Passo 5: conferir se as regras foram **publicadas** |
 | No iPhone, com o app instalado, o login não abre | Entre uma vez pelo **Safari** normal; se continuar, use pelo Safari |

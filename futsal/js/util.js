@@ -1,5 +1,6 @@
 /* =========================================================
    UTIL.JS — Funções ajudantes usadas em todo o app.
+   (Publicado no Firebase Hosting: futsal-sumula.web.app)
    Tudo fica dentro do objeto global "App" para não
    espalhar variáveis soltas pelo navegador.
    ========================================================= */
@@ -83,18 +84,36 @@ App.util = {
     ch: 'Suíça', tn: 'Tunísia', tr: 'Turquia', ua: 'Ucrânia', uy: 'Uruguai', ve: 'Venezuela',
   },
 
-  /** Emoji da bandeira a partir do código do país ("br" → 🇧🇷). */
-  bandeira(codigo) {
-    const c = String(codigo || '').toUpperCase();
-    if (!/^[A-Z]{2}$/.test(c)) return '';
-    return String.fromCodePoint(...[...c].map((l) => 0x1F1E6 + l.charCodeAt(0) - 65));
+  /**
+   * Endereço da imagem da bandeira ("br" → icons/bandeiras/br.svg).
+   * As imagens ficam dentro do projeto (biblioteca flag-icons, licença MIT),
+   * então funcionam em qualquer aparelho (inclusive Windows) e offline.
+   * Devolve '' se o país não estiver na lista.
+   */
+  bandeiraUrl(codigo) {
+    const c = String(codigo || '').toLowerCase();
+    return App.util.PAISES[c] ? `icons/bandeiras/${c}.svg` : '';
+  },
+
+  /** <img> da bandeira. classe: 'bandeira-mini' (ao lado do texto) ou outra. */
+  bandeiraImg(codigo, classe = 'bandeira-mini') {
+    const url = App.util.bandeiraUrl(codigo);
+    if (!url) return '';
+    const pais = App.util.esc(App.util.PAISES[String(codigo).toLowerCase()]);
+    return `<img class="${classe}" src="${url}" alt="Bandeira: ${pais}" title="${pais}" decoding="async">`;
+  },
+
+  /** Nome do time com a bandeira na frente (se tiver). Já vem protegido para HTML. */
+  nomeTime(time) {
+    if (!time) return '';
+    return (time.bandeira ? App.util.bandeiraImg(time.bandeira) : '') + App.util.esc(time.nome);
   },
 
   /** HTML do escudo do time: bandeira, imagem ou bolinha colorida com a inicial. */
   escudo(time, classeExtra = '') {
     if (!time) return `<span class="escudo ${classeExtra}" style="background:#ccc">?</span>`;
-    if (time.bandeira && App.util.bandeira(time.bandeira)) {
-      return `<span class="escudo bandeira ${classeExtra}" title="${App.util.esc(App.util.PAISES[time.bandeira] || '')}">${App.util.bandeira(time.bandeira)}</span>`;
+    if (time.bandeira && App.util.bandeiraUrl(time.bandeira)) {
+      return `<span class="escudo bandeira ${classeExtra}">${App.util.bandeiraImg(time.bandeira, '')}</span>`;
     }
     const cor = time.cor || '#888888';
     if (time.escudo) {

@@ -80,7 +80,7 @@ App.telas.relatorios = {
       const faltas = [];
       for (let per = 1; per <= Math.max(s.periodo, cat.config.numPeriodos); per++) faltas.push(`${per}ºP: ${R.faltasNoPeriodo(jogo, time.id, per)}`);
       return `<div>
-        <h2>${U.esc(time.nome)}</h2>
+        <h2>${U.nomeTime(time)}</h2>
         <table><thead><tr><th class="n">Nº</th><th>Atleta</th><th class="n">G</th><th class="n">CA</th><th class="n">CV</th><th class="n">Obs</th></tr></thead>
         <tbody>${linhas || '<tr><td colspan="6">Sem jogadores</td></tr>'}</tbody></table>
         <p>Técnico: ${U.esc(time.tecnico || '—')}<br>Faltas: ${faltas.join(' · ')}</p>
@@ -102,9 +102,9 @@ App.telas.relatorios = {
         <tr><th>Local</th><td>${U.esc(camp.local || '—')}</td><th>Quadra</th><td>${U.esc(jogo.quadra || '—')}</td></tr>
       </table>
       <div class="placar-folha">
-        <div>${U.esc(casa.nome)}</div>
+        <div>${U.nomeTime(casa)}</div>
         <div class="gols">${jogo.status === 'agendado' ? '&nbsp;×&nbsp;' : `${p.casa} × ${p.fora}`}</div>
-        <div>${U.esc(fora.nome)}</div>
+        <div>${U.nomeTime(fora)}</div>
       </div>
       ${pen ? `<p class="sub"><b>Pênaltis: ${pen.casa} × ${pen.fora}</b></p>` : ''}
       ${jogo.status !== 'encerrado' ? '<p class="sub"><b>(JOGO NÃO ENCERRADO)</b></p>' : ''}
@@ -162,7 +162,7 @@ App.telas.relatorios = {
       const placar = j.status === 'encerrado' ? `${p.casa} × ${p.fora}${pen ? ` (${pen.casa}×${pen.fora} pên.)` : ''}` : '×';
       html += `<tr><td class="n">${R.numeroJogo(j)}</td><td class="n">${U.dataCurta(j.data) || '—'}</td><td class="n">${U.esc(j.hora || '—')}</td><td class="n">${U.esc(j.quadra || '—')}</td>
         ${temGrupo ? `<td class="n">${U.esc((grupos[j.grupoId] || '').replace('Grupo ', ''))}</td>` : ''}
-        <td>${U.esc(casa ? casa.nome : R.textoOrigem(j.origemCasa, cat.id))}</td><td class="n"><b>${placar}</b></td><td>${U.esc(fora ? fora.nome : R.textoOrigem(j.origemFora, cat.id))}</td></tr>`;
+        <td>${casa ? U.nomeTime(casa) : U.esc(R.textoOrigem(j.origemCasa, cat.id))}</td><td class="n"><b>${placar}</b></td><td>${fora ? U.nomeTime(fora) : U.esc(R.textoOrigem(j.origemFora, cat.id))}</td></tr>`;
     }
     return html + '</tbody></table>';
   },
@@ -175,7 +175,7 @@ App.telas.relatorios = {
     const tabela = (titulo, linhas) => `
       <h2>${U.esc(titulo)}</h2>
       <table><thead><tr><th class="n">#</th><th>Time</th><th class="n">P</th><th class="n">J</th><th class="n">V</th><th class="n">E</th><th class="n">D</th><th class="n">GP</th><th class="n">GC</th><th class="n">SG</th></tr></thead>
-      <tbody>${linhas.map((l) => `<tr><td class="n">${l.pos}</td><td>${U.esc(D.time(l.timeId).nome)}</td><td class="n"><b>${l.pts}</b></td><td class="n">${l.j}</td><td class="n">${l.v}</td><td class="n">${l.e}</td><td class="n">${l.d}</td><td class="n">${l.gp}</td><td class="n">${l.gc}</td><td class="n">${l.sg}</td></tr>`).join('')}</tbody></table>`;
+      <tbody>${linhas.map((l) => `<tr><td class="n">${l.pos}</td><td>${U.nomeTime(D.time(l.timeId))}</td><td class="n"><b>${l.pts}</b></td><td class="n">${l.j}</td><td class="n">${l.v}</td><td class="n">${l.e}</td><td class="n">${l.d}</td><td class="n">${l.gp}</td><td class="n">${l.gc}</td><td class="n">${l.sg}</td></tr>`).join('')}</tbody></table>`;
 
     let html = '';
     const est = R.estruturaClassificacao(cat);
@@ -189,9 +189,9 @@ App.telas.relatorios = {
           const fora = D.time(j.foraId);
           const p = R.placar(j);
           const pen = R.temPenaltis(j) ? R.placarPenaltis(j) : null;
-          return `<tr><td>${U.esc(j.rodadaNome)}</td><td>${U.esc(casa ? casa.nome : R.textoOrigem(j.origemCasa, cat.id))}</td>
+          return `<tr><td>${U.esc(j.rodadaNome)}</td><td>${casa ? U.nomeTime(casa) : U.esc(R.textoOrigem(j.origemCasa, cat.id))}</td>
             <td class="n"><b>${j.status === 'encerrado' ? `${p.casa} × ${p.fora}${pen ? ` (${pen.casa}×${pen.fora})` : ''}` : '×'}</b></td>
-            <td>${U.esc(fora ? fora.nome : R.textoOrigem(j.origemFora, cat.id))}</td></tr>`;
+            <td>${fora ? U.nomeTime(fora) : U.esc(R.textoOrigem(j.origemFora, cat.id))}</td></tr>`;
         }).join('')}</tbody></table>`;
       }
     }
@@ -206,7 +206,7 @@ App.telas.relatorios = {
     const tabela = (titulo, col, linhas, campo) => `
       <h2>${titulo}</h2>
       ${linhas.length ? `<table><thead><tr><th class="n">#</th><th>Atleta</th><th>Time</th><th class="n">${col}</th></tr></thead><tbody>
-      ${linhas.map((x, i) => `<tr><td class="n">${i + 1}</td><td>${U.esc(x.jogador.nome)} (${U.esc(x.jogador.numero)})</td><td>${U.esc(x.time.nome)}</td><td class="n"><b>${x[campo]}</b></td></tr>`).join('')}
+      ${linhas.map((x, i) => `<tr><td class="n">${i + 1}</td><td>${U.esc(x.jogador.nome)} (${U.esc(x.jogador.numero)})</td><td>${U.nomeTime(x.time)}</td><td class="n"><b>${x[campo]}</b></td></tr>`).join('')}
       </tbody></table>` : '<p>Sem registros ainda.</p>'}`;
     return tabela('Artilharia', 'Gols', est.artilharia, 'gols') +
       tabela('Assistências', 'Assist.', est.assistencias, 'assist');

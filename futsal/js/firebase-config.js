@@ -24,6 +24,11 @@ App.firebaseConfig = {
   appId: "1:494468012070:web:dbfb3868f612d2737baee7"
 };
 
+// Login no mesmo endereço do app (melhor para iPhone/Safari).
+// Mude para true SÓ depois de autorizar https://futsal-sumula.web.app/__/auth/handler
+// no Google Cloud (passo "Login no iPhone" do GUIA-FIREBASE.md) e publique de novo.
+App.loginNoMesmoEndereco = false;
+
 /* Exemplo de como fica depois de colar (os valores são do SEU projeto):
 
 App.firebaseConfig = {

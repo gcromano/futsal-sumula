@@ -354,7 +354,7 @@ App.telas.campeonato = {
         gols = (lado === 'casa' ? p.casa : p.fora) + (pen ? ` (${lado === 'casa' ? pen.casa : pen.fora})` : '');
       }
       const venceu = id && R.vencedor(j) === id;
-      return `<div class="${venceu ? 'venceu' : ''}"><span>${U.esc(nome)}</span><span>${gols}</span></div>`;
+      return `<div class="${venceu ? 'venceu' : ''}"><span>${t ? U.nomeTime(t) : U.esc(nome)}</span><span>${gols}</span></div>`;
     };
     return `<div class="chave">${fases.map((f) => `
       <div class="chave-coluna">
@@ -401,7 +401,7 @@ App.telas.campeonato = {
   abaEstatisticas(area, camp, cat) {
     const U = App.util;
     const est = App.regras.estatisticas(cat.id);
-    const nomeJog = (x) => `<a href="#/jogador/${x.jogadorId}">${U.esc(x.jogador.nome)}</a> <span class="suave">${U.esc(x.time.nome)}</span>`;
+    const nomeJog = (x) => `<a href="#/jogador/${x.jogadorId}">${U.esc(x.jogador.nome)}</a> <span class="suave">${U.nomeTime(x.time)}</span>`;
     const tabela = (titulo, colunas, linhas) => `
       <div class="cartao"><h2>${titulo}</h2>
         ${linhas.length ? `<div class="tabela-rolagem"><table class="tabela">
@@ -437,7 +437,7 @@ App.telas.campeonato = {
       const { time, jogador } = D.jogador(s.jogadorId);
       if (!jogador) return '';
       return `<li><span class="camisa">${U.esc(jogador.numero)}</span>
-        <div class="cresce"><a href="#/jogador/${jogador.id}"><b>${U.esc(jogador.nome)}</b></a> <span class="suave">${U.esc(time.nome)}</span><br>
+        <div class="cresce"><a href="#/jogador/${jogador.id}"><b>${U.esc(jogador.nome)}</b></a> <span class="suave">${U.nomeTime(time)}</span><br>
         <span class="suave">${U.esc(s.motivo)}</span></div></li>`;
     };
     const tituloJogo = (j) => `${U.esc(j.rodadaNome)}: ${U.esc((D.time(j.casaId) || {}).nome)} × ${U.esc((D.time(j.foraId) || {}).nome)}${j.data ? ' · ' + U.dataCurta(j.data) : ''}`;

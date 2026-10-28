@@ -126,7 +126,7 @@ App.telas.sumula = {
     // Colunas de botões de eventos (uma por time)
     const coluna = (time) => `
       <div class="eventos-col">
-        <div class="cab" style="background:${time.cor};color:${U.corTexto(time.cor)}">${U.esc(time.nome)}</div>
+        <div class="cab" style="background:${time.cor};color:${U.corTexto(time.cor)}">${U.nomeTime(time)}</div>
         <button class="btn btn-evento btn-gol" data-ev="gol" data-time="${time.id}">⚽ GOL</button>
         <div class="duplo">
           <button class="btn btn-evento" data-ev="falta" data-time="${time.id}">✋ Falta</button>
@@ -294,7 +294,7 @@ App.telas.sumula = {
         <h2>🥅 Disputa de pênaltis · ${pen.casa} × ${pen.fora}</h2>
         ${!enc ? `<div class="eventos-times">
           ${[casa, fora].map((t) => `<div class="eventos-col">
-            <div class="cab" style="background:${t.cor};color:${U.corTexto(t.cor)}">${U.esc(t.nome)}</div>
+            <div class="cab" style="background:${t.cor};color:${U.corTexto(t.cor)}">${U.nomeTime(t)}</div>
             <div class="duplo">
               <button class="btn btn-primario" data-pen="1" data-time="${t.id}">✅ Gol</button>
               <button class="btn btn-perigo" data-pen="0" data-time="${t.id}">❌ Perdeu</button>

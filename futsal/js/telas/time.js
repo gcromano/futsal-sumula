@@ -30,7 +30,7 @@ App.telas.time = {
           <label class="campo"><span>Bandeira (para seleções)</span>
             <select name="bandeira">
               <option value="">Sem bandeira (usar cor/escudo)</option>
-              ${paises.map(([cod, nome]) => `<option value="${cod}" ${t.bandeira === cod ? 'selected' : ''}>${U.bandeira(cod)} ${U.esc(nome)}</option>`).join('')}
+              ${paises.map(([cod, nome]) => `<option value="${cod}" ${t.bandeira === cod ? 'selected' : ''}>${U.esc(nome)}</option>`).join('')}
             </select></label>
           <div class="linha" style="margin-bottom:12px">
             <span id="previa-escudo">${U.escudo({ ...t, escudo }, 'grande')}</span>

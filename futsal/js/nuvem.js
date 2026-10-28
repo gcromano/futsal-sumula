@@ -65,6 +65,15 @@ App.nuvem = {
     const forcarLocal = ['localhost', '127.0.0.1'].includes(location.hostname) && /[?&]local\b/.test(location.search);
     if (!config || !globalThis.firebase || forcarLocal) { this.ativo = false; return; }
 
+    // Login no MESMO endereço do app quando ele está no Firebase Hosting
+    // (futsal-sumula.web.app). Sem isso, Safari/iPhone e navegadores que isolam
+    // os dados de cada site perdem o login no meio do caminho ("missing initial state").
+    // ⚠️ Só liga depois de autorizar https://futsal-sumula.web.app/__/auth/handler
+    // no Google Cloud (veja GUIA-FIREBASE.md); senão o Google dá "redirect_uri_mismatch".
+    if (App.loginNoMesmoEndereco && /\.(web\.app|firebaseapp\.com)$/.test(location.hostname)) {
+      config = Object.assign({}, config, { authDomain: location.hostname });
+    }
+
     this.ativo = true;
     this.carregando = true;
     firebase.initializeApp(config);

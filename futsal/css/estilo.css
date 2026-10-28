@@ -268,10 +268,28 @@ textarea { min-height: 100px; resize: vertical; }
 }
 .escudo img { width: 100%; height: 100%; object-fit: cover; }
 .escudo.grande { width: 64px; height: 64px; font-size: 1.5rem; }
-/* Bandeira (emoji) no lugar do escudo */
-.escudo.bandeira { background: #f2f4f3; font-size: 1.35rem; line-height: 1; border-color: transparent; }
-.escudo.bandeira.grande { font-size: 2.6rem; }
-.time-mini .escudo.bandeira { font-size: .95rem; }
+/* Bandeira (imagem SVG) no lugar do escudo: retângulo 4:3 para mostrar a bandeira inteira */
+.escudo.bandeira {
+  width: 36px; height: 27px;
+  border-radius: 4px;
+  border: 0;
+  background: #e8ecea;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .14);
+}
+.escudo.bandeira img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.escudo.bandeira.grande { width: 64px; height: 48px; border-radius: 6px; }
+.time-mini .escudo.bandeira { width: 24px; height: 18px; border-radius: 3px; }
+
+/* Bandeira pequena ao lado do nome (relatórios, súmula, chaveamento) */
+.bandeira-mini {
+  display: inline-block;
+  width: 1.33em; height: 1em;
+  object-fit: cover;
+  vertical-align: -.15em;
+  margin-right: .35em;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .18);
+}
 
 /* ---------- Listas ---------- */
 .lista { list-style: none; margin: 0; padding: 0; }
@@ -522,6 +540,7 @@ table.tabela a { color: inherit; text-decoration: none; }
   main { padding: 0; max-width: none; }
   .folha { box-shadow: none; padding: 0; border-radius: 0; }
   .folha .colunas { grid-template-columns: 1fr 1fr; }
+  .bandeira-mini, .escudo.bandeira img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .folha table { page-break-inside: auto; }
   .folha tr { page-break-inside: avoid; }
 }

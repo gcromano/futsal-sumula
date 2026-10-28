@@ -7,7 +7,7 @@
      (network-first): sempre tenta a versão mais nova do site.
      Se estiver sem internet (ou a internet demorar mais de
      4 segundos), usa a cópia guardada.
-   - Ícones e o SDK do Firebase (js/vendor) → "cache primeiro":
+   - Ícones, bandeiras e o SDK do Firebase (js/vendor) → "cache primeiro":
      quase nunca mudam, então abrem na hora.
 
    ATUALIZAÇÃO
@@ -19,7 +19,7 @@
      Mude a VERSAO só se mudar a lista ARQUIVOS abaixo.
    ========================================================= */
 
-const VERSAO = 'futsal-v5';
+const VERSAO = 'futsal-v6';
 const TEMPO_LIMITE_REDE = 4000; // ms: depois disso usa o cache (internet fraca na quadra)
 
 const ARQUIVOS = [
@@ -48,6 +48,57 @@ const ARQUIVOS = [
   './js/telas/sumula.js',
   './js/telas/relatorios.js',
   './js/telas/backup.js',
+  // Bandeiras das seleções (flag-icons, licença MIT) — guardadas para funcionar offline
+  './icons/bandeiras/ar.svg',
+  './icons/bandeiras/at.svg',
+  './icons/bandeiras/au.svg',
+  './icons/bandeiras/be.svg',
+  './icons/bandeiras/bo.svg',
+  './icons/bandeiras/br.svg',
+  './icons/bandeiras/ca.svg',
+  './icons/bandeiras/ch.svg',
+  './icons/bandeiras/ci.svg',
+  './icons/bandeiras/cl.svg',
+  './icons/bandeiras/cm.svg',
+  './icons/bandeiras/cn.svg',
+  './icons/bandeiras/co.svg',
+  './icons/bandeiras/cr.svg',
+  './icons/bandeiras/cz.svg',
+  './icons/bandeiras/de.svg',
+  './icons/bandeiras/dk.svg',
+  './icons/bandeiras/ec.svg',
+  './icons/bandeiras/eg.svg',
+  './icons/bandeiras/es.svg',
+  './icons/bandeiras/fr.svg',
+  './icons/bandeiras/gb.svg',
+  './icons/bandeiras/gh.svg',
+  './icons/bandeiras/gr.svg',
+  './icons/bandeiras/hr.svg',
+  './icons/bandeiras/it.svg',
+  './icons/bandeiras/jp.svg',
+  './icons/bandeiras/kr.svg',
+  './icons/bandeiras/ma.svg',
+  './icons/bandeiras/mx.svg',
+  './icons/bandeiras/ng.svg',
+  './icons/bandeiras/nl.svg',
+  './icons/bandeiras/no.svg',
+  './icons/bandeiras/nz.svg',
+  './icons/bandeiras/pa.svg',
+  './icons/bandeiras/pe.svg',
+  './icons/bandeiras/pl.svg',
+  './icons/bandeiras/pt.svg',
+  './icons/bandeiras/py.svg',
+  './icons/bandeiras/rs.svg',
+  './icons/bandeiras/ru.svg',
+  './icons/bandeiras/sa.svg',
+  './icons/bandeiras/se.svg',
+  './icons/bandeiras/sn.svg',
+  './icons/bandeiras/tn.svg',
+  './icons/bandeiras/tr.svg',
+  './icons/bandeiras/ua.svg',
+  './icons/bandeiras/us.svg',
+  './icons/bandeiras/uy.svg',
+  './icons/bandeiras/ve.svg',
 ];
 
 // Instalação: baixa tudo direto do servidor (sem cache HTTP) e ativa na hora

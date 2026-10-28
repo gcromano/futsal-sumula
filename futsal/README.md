@@ -17,7 +17,9 @@ Funciona no celular (instalável e offline) e no computador, hospedado de graça
   tempo de jogo, pontuação, critérios de desempate (em ordem que você escolhe) e formato
   (pontos corridos, grupos + mata-mata ou só mata-mata).
 - **Times e elencos** com camisa, nome, nascimento e posição. Elenco pode ser **colado em texto** (um jogador por linha). Alerta quando a idade não bate com a categoria
-  (dá para desligar por campeonato, ex.: categorias por ano escolar). Seleções podem mostrar a **bandeira** do país.
+  (dá para desligar por campeonato, ex.: categorias por ano escolar). Seleções podem mostrar a **bandeira** do país
+  (imagens SVG dentro do projeto, em `icons/bandeiras/`, da biblioteca flag-icons, licença MIT: aparecem em qualquer
+  aparelho, inclusive Windows, e offline).
 - **Tabela de jogos do jeito que precisar**: gerada sozinha, montada jogo a jogo, colada em texto — ou tudo misturado.
   Qualquer jogo pode ser editado, trocado, reordenado ou excluído. No mata-mata o vencedor avança sozinho.
 - **Súmula ao vivo**: placar grande, cronômetro, gols (com assistência), gol contra, faltas, cartões e pedido de tempo.
@@ -218,6 +220,7 @@ manifest.webmanifest    → dados do app instalável (nome, ícone, cores)
 sw.js                   → service worker: guarda os arquivos para funcionar offline
 css/estilo.css          → todo o visual (celular primeiro) + layout de impressão
 icons/                  → ícones do app
+  bandeiras/            → 50 bandeiras SVG (flag-icons, MIT; licença em LICENSE.txt)
 js/
   util.js               → ajudantes: ids, datas, modal, toast, bandeiras, download...
   vendor/               → cópia do Firebase (para funcionar offline, sem depender de CDN)
@@ -252,31 +255,32 @@ Abra o console do navegador (F12) e brinque com eles.
 
 ---
 
-## Como subir pelo site do GitHub
+## Publicar o app (Firebase Hosting)
 
-**Antes:** faça o GUIA-FIREBASE.md até o passo 6 (colar a configuração em `js/firebase-config.js`).
-Se subir sem isso, o site continua funcionando em modo local.
+O app fica em **https://futsal-sumula.web.app**. O GitHub guarda só o código.
 
-1. Abra <https://github.com/gcromano/futsal-sumula> → **Add file** → **Upload files**.
-2. No Finder, abra a pasta `~/futsal` e **arraste para a página** estes itens (as pastas inteiras):
+**Para publicar uma versão nova** (no Terminal, no Mac):
 
-   | Enviar | |
-   |---|---|
-   | `index.html` | na raiz (é o que faz o link funcionar) |
-   | `manifest.webmanifest`, `sw.js` | |
-   | `README.md`, `GUIA-FIREBASE.md`, `firestore.rules` | |
-   | pasta `css/` | |
-   | pasta `icons/` | |
-   | pasta `js/` | inclui `js/vendor/`, `js/telas/`, `nuvem.js`, `firebase-config.js` |
+```bash
+cd ~/futsal && npx --yes firebase-tools@13 deploy --only hosting
+```
 
-3. **NÃO arraste:** `dados-iniciais/` (dados do campeonato), arquivos `futsal-backup-*.json`, `.claude/`,
-   e nunca um arquivo de "conta de serviço" (`*adminsdk*.json`) se algum dia baixar um.
-4. Escreva a mensagem (ex.: "Tabela manual + modo online com Firebase") → **Commit changes**.
-5. Espere 1–2 minutos e abra <https://gcromano.github.io/futsal-sumula/>.
+- Ele envia só os arquivos do app (a lista está no `firebase.json`: ficam de fora `dados-iniciais/`, `.md`,
+  `firestore.rules`, backups `.json`, `.claude/` e testes).
+- `--only hosting` **não mexe** nas regras nem no banco.
+- Em 1–2 minutos os aparelhos recebem a versão nova sozinhos (o app detecta e recarrega; nunca no meio da súmula).
+- Se der erro de login (“Authentication Error”), rode antes: `npx --yes firebase-tools@13 login`.
+- Mudou o `firestore.rules`? Esse vai pelo Firebase (Firestore → Regras → colar e Publicar), como no guia.
 
-**Apagar do repositório:** nada. Nenhum arquivo da versão anterior foi removido ou renomeado
-(os que mudaram são substituídos pelo upload).
+**Guardar o código no GitHub:** suba os arquivos alterados para a pasta `futsal/` do repositório
+(**Add file → Upload files**). Pode subir também `firebase.json`, `.firebaserc` e `.gitignore`.
+**Nunca** suba `dados-iniciais/`, backups `futsal-backup-*.json` ou chaves `*adminsdk*.json`.
 
-**`.gitignore` no mesmo commit:** o Finder esconde arquivos que começam com ponto. Na pasta `~/futsal`,
-aperte **Cmd + Shift + .** (ponto) para mostrar os ocultos e arraste o `.gitignore` junto com o resto.
-(Ele protege quem usar git pelo Terminal; no upload pelo site, quem decide o que vai é você.)
+### O endereço antigo (GitHub Pages)
+
+A pasta `redirecionamento-github/docs/` tem páginas que mandam quem abrir o link antigo para o endereço novo
+(mantendo o `#/...` do link) e desligam o app antigo de quem o tinha instalado. Para ativar:
+
+1. Suba a pasta **`docs`** (de dentro de `redirecionamento-github/`) para a **raiz** do repositório.
+2. No GitHub: **Settings → Pages → Build and deployment → Branch: `main`**, pasta **`/docs`** → **Save**.
+3. Pronto: o GitHub Pages passa a servir só os redirecionamentos; o código em `futsal/` continua guardado.
