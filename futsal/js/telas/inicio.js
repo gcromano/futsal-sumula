@@ -41,7 +41,10 @@ App.telas.inicio = {
         <div class="aviso-faixa amarela">
           📦 Este aparelho tem <b>${locais.campeonatos.length} campeonato(s)</b> salvos só aqui (da versão sem nuvem):
           ${locais.campeonatos.map((c) => U.esc(c.nome)).join(', ')}.
-          <div class="grupo-botoes"><button class="btn btn-primario" id="btn-migrar">☁️ Enviar para a nuvem</button></div>
+          <div class="grupo-botoes">
+            <button class="btn btn-primario" id="btn-migrar">☁️ Enviar para a nuvem</button>
+            <button class="btn" id="btn-apagar-locais">🗑️ Apagar do aparelho</button>
+          </div>
           <small>Eles serão criados como <b>privados</b>, com você como admin. Uma cópia continua guardada no aparelho.</small>
         </div>`;
     }
@@ -90,6 +93,25 @@ App.telas.inicio = {
     ligar('btn-entrar', () => N.entrar());
     ligar('btn-exemplo', () => { const c = App.exemplo.carregar(); U.toast('Exemplo carregado!', 'ok'); App.ir(`#/camp/${c.id}`); });
     ligar('btn-migrar', () => this.migrar(locais));
+    ligar('btn-apagar-locais', () => this.apagarLocais(locais));
+  },
+
+  /**
+   * Apaga do aparelho os campeonatos que estavam salvos só aqui (versão sem nuvem).
+   * Mexe SÓ no armazenamento do navegador (localStorage): os campeonatos da
+   * nuvem (Firestore) não são tocados — nem lidos, nem gravados.
+   */
+  async apagarLocais(locais) {
+    const U = App.util;
+    const nomes = locais.campeonatos.map((c) => `“${c.nome}”`).join(', ');
+    const ok = await U.confirmar(
+      `Apagar deste aparelho: ${nomes}? Eles NÃO estão na nuvem, então somem de vez (não dá para desfazer). ` +
+      'Os campeonatos que já estão na nuvem continuam intactos.',
+      'Apagar do aparelho', 'btn-perigo');
+    if (!ok) return;
+    App.dados.apagarDadosLocais();
+    U.toast('Campeonatos locais apagados deste aparelho.', 'ok');
+    App.render();
   },
 
   /** Envia os campeonatos que estavam só no aparelho para a nuvem. */

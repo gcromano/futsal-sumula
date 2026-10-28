@@ -80,6 +80,14 @@ App.dados = {
     }
   },
 
+  /**
+   * Apaga os dados salvos só neste aparelho (localStorage).
+   * NÃO mexe em this.db nem chama salvar(): os dados da nuvem ficam intactos.
+   */
+  apagarDadosLocais() {
+    if (globalThis.localStorage) localStorage.removeItem(this.CHAVE);
+  },
+
   /** Depois de enviar para a nuvem, guarda os dados locais com outro nome (não apaga). */
   arquivarDadosLocais() {
     const texto = localStorage.getItem(this.CHAVE);
