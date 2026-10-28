@@ -72,7 +72,18 @@ Depois de abrir o endereço no celular:
 - **iPhone (Safari):** botão **Compartilhar** → **Adicionar à Tela de Início**.
 
 Pronto: aparece um ícone ⚽ e o app abre em tela cheia, **mesmo sem internet**.
-Quando você atualizar os arquivos no site, o celular baixa a versão nova sozinho (aparece na próxima vez que abrir).
+
+### Atualizações chegam sozinhas
+
+- Páginas, `.js` e `.css` vêm **primeiro da internet** (se a internet cair ou demorar mais de 4 s, usa a cópia
+  guardada). Ícones e o SDK do Firebase vêm do cache.
+- Ao **abrir** o app e sempre que ele **volta para a tela** (ex.: voltar ao app no celular), ele confere se
+  algum arquivo mudou no site. Se mudou, **recarrega sozinho** — sem precisar de F5.
+- **Nunca recarrega no meio de uma súmula** (nem com uma janela aberta ou alguém digitando): na súmula aparece
+  só a faixa “🔄 Nova versão disponível — atualizar”. Atualiza quando a pessoa tocar nela ou sair da súmula.
+  Placar e cronômetro não se perdem.
+- Você **não** precisa mudar nada no `sw.js` a cada publicação. Só aumente a `VERSAO` dele se mudar a
+  lista de arquivos (por exemplo, ao criar um arquivo `.js` novo).
 
 ---
 

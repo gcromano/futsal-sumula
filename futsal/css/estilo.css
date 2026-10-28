@@ -143,6 +143,24 @@ main {
 .status-sync.offline { background: #c4c4c4; }
 .status-sync.visitante { display: none; }
 
+/* Aviso de versão nova (aparece só na súmula; toque para atualizar) */
+.aviso-versao {
+  position: fixed;
+  left: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 40;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #13201a;
+  color: #fff;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 600;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .3);
+  cursor: pointer;
+}
+
 /* Botão flutuante (+) */
 .fab {
   position: fixed;
