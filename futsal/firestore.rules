@@ -1,0 +1,139 @@
+rules_version = '2';
+
+// =========================================================
+// REGRAS DE SEGURANÇA DO FIRESTORE — Futsal Súmula
+//
+// É AQUI que a segurança acontece (não na tela do app).
+// Mesmo que alguém tente pelo console do navegador:
+//  - campeonato PRIVADO: só os admins dele leem;
+//  - campeonato PÚBLICO: qualquer um lê tabela, jogos e times,
+//    mas NUNCA os dados de contato e nascimento (pasta "privado");
+//  - gravar qualquer coisa: só admin DAQUELE campeonato;
+//  - toda gravação leva quem alterou e quando (hora do servidor);
+//  - o histórico de alterações não pode ser editado nem apagado.
+//
+// Como usar: copie TODO este arquivo e cole no Firebase em
+// Firestore Database → Regras → Publicar. (Veja GUIA-FIREBASE.md)
+//
+// Estrutura:
+//   campeonatos/{camp}                 → dados, visibilidade, admins
+//   campeonatos/{camp}/times/{time}    → time e elenco (sem dados pessoais)
+//   campeonatos/{camp}/privado/{time}  → telefone, responsável, nascimentos
+//   campeonatos/{camp}/jogos/{jogo}    → jogo e súmula
+//   campeonatos/{camp}/historico/{id}  → quem alterou o quê e quando
+// =========================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Ajudantes ----------
+
+    // Logado com e-mail confirmado (contas Google já vêm confirmadas)
+    function logado() {
+      return request.auth != null
+        && request.auth.token.email is string
+        && request.auth.token.email_verified == true;
+    }
+
+    // (o Google entrega o e-mail em minúsculas; o app grava os admins em minúsculas)
+    function meuEmail() {
+      return request.auth.token.email;
+    }
+
+    // "dados" é o conteúdo do documento do campeonato
+    function ehAdminDe(dados) {
+      return logado() && meuEmail() in dados.admins;
+    }
+
+    // Toda gravação precisa dizer quem alterou e usar a hora do servidor
+    function carimbado() {
+      return request.resource.data.alteradoPor == meuEmail()
+        && request.resource.data.alteradoEm == request.time;
+    }
+
+    function campeonatoValido(d) {
+      return d.nome is string && d.nome.size() > 0 && d.nome.size() <= 150
+        && d.visibilidade in ['publico', 'privado']
+        && d.admins is list && d.admins.size() >= 1 && d.admins.size() <= 30
+        && d.categorias is list && d.categorias.size() <= 30;
+    }
+
+    // ---------- Campeonatos ----------
+    match /campeonatos/{camp} {
+
+      function dadosCamp() {
+        return get(/databases/$(database)/documents/campeonatos/$(camp)).data;
+      }
+      function campExiste() {
+        return exists(/databases/$(database)/documents/campeonatos/$(camp));
+      }
+      function souAdmin() {
+        return campExiste() && ehAdminDe(dadosCamp());
+      }
+      function podeLer() {
+        return campExiste() && (dadosCamp().visibilidade == 'publico' || ehAdminDe(dadosCamp()));
+      }
+
+      // Ler: público para todos; privado só para os admins dele
+      allow get, list: if resource.data.visibilidade == 'publico' || ehAdminDe(resource.data);
+
+      // Criar: qualquer pessoa logada, e ela precisa estar entre os admins
+      allow create: if logado()
+        && campeonatoValido(request.resource.data)
+        && meuEmail() in request.resource.data.admins
+        && request.resource.data.criadoPor == meuEmail()
+        && request.resource.data.criadoEm == request.time
+        && carimbado();
+
+      // Alterar: só admin; não dá para mudar quem criou nem quando
+      allow update: if ehAdminDe(resource.data)
+        && campeonatoValido(request.resource.data)
+        && request.resource.data.criadoPor == resource.data.criadoPor
+        && request.resource.data.criadoEm == resource.data.criadoEm
+        && carimbado();
+
+      // Apagar: só admin
+      allow delete: if ehAdminDe(resource.data);
+
+      // ---------- Times e jogos: leitura conforme a visibilidade ----------
+      match /times/{doc} {
+        allow read: if podeLer();
+        allow create, update: if souAdmin() && carimbado()
+          && request.resource.data.campeonatoId == camp;
+        allow delete: if souAdmin();
+      }
+
+      match /jogos/{doc} {
+        allow read: if podeLer();
+        allow create, update: if souAdmin() && carimbado()
+          && request.resource.data.campeonatoId == camp;
+        allow delete: if souAdmin();
+      }
+
+      // ---------- Dados pessoais: SÓ admins, mesmo em campeonato público ----------
+      match /privado/{doc} {
+        allow read: if souAdmin();
+        allow create, update: if souAdmin() && carimbado()
+          && request.resource.data.campeonatoId == camp;
+        allow delete: if souAdmin();
+      }
+
+      // ---------- Histórico: só admins leem; ninguém edita nem apaga ----------
+      match /historico/{doc} {
+        allow read: if souAdmin();
+        allow create: if souAdmin()
+          && request.resource.data.keys().hasOnly(['quem', 'quando', 'resumo'])
+          && request.resource.data.quem == meuEmail()
+          && request.resource.data.quando == request.time
+          && request.resource.data.resumo is string
+          && request.resource.data.resumo.size() <= 1000;
+        allow update, delete: if false;
+      }
+    }
+
+    // Qualquer outra coisa: bloqueado
+    match /{caminho=**} {
+      allow read, write: if false;
+    }
+  }
+}
