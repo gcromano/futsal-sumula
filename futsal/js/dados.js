@@ -151,6 +151,54 @@ App.dados = {
     confronto: 'Confronto direto',
     cartoes: 'Menos cartões',
     sorteio: 'Sorteio',
+    saldoPontos: 'Saldo de pontos (sets)', // só aparece em modalidades por sets
+  },
+
+  /* ---------- INTERCLASSE ---------- */
+
+  /**
+   * Tipos de placar das modalidades do interclasse.
+   * (Campeonatos de futsal comuns não têm "tipoPlacar": valem como 'gols'.)
+   */
+  TIPOS_PLACAR: {
+    gols: 'Gols / pontos (placar simples)',
+    sets: 'Sets (vôlei)',
+    resultado: 'Vitória / empate / derrota (sem placar)',
+  },
+
+  /** Sugestões de modalidades (nome, emoji e tipo de placar). */
+  MODALIDADES_SUGERIDAS: [
+    { nome: 'Futsal', emoji: '⚽', tipoPlacar: 'gols', sumulaCompleta: true },
+    { nome: 'Vôlei', emoji: '🏐', tipoPlacar: 'sets' },
+    { nome: 'Basquete', emoji: '🏀', tipoPlacar: 'gols', permiteEmpate: false },
+    { nome: 'Handebol', emoji: '🤾', tipoPlacar: 'gols' },
+    { nome: 'Xadrez', emoji: '♟️', tipoPlacar: 'resultado' },
+    { nome: 'Tênis de mesa', emoji: '🏓', tipoPlacar: 'resultado', permiteEmpate: false },
+    { nome: 'Queimada', emoji: '🔴', tipoPlacar: 'resultado' },
+  ],
+
+  /**
+   * Configuração de uma modalidade do interclasse.
+   * Parte da configuração de campeonato (configPadrao) + os campos novos.
+   */
+  configModalidade(dados = {}) {
+    const tipo = dados.tipoPlacar || 'gols';
+    const cfg = Object.assign(this.configPadrao(''), {
+      tipoPlacar: tipo,                                  // 'gols' | 'sets' | 'resultado'
+      permiteEmpate: tipo === 'sets' ? false : dados.permiteEmpate !== false,
+      melhorDe: dados.melhorDe === 5 ? 5 : 3,            // sets: melhor de 3 ou de 5
+      sumulaCompleta: tipo === 'gols' && !!dados.sumulaCompleta, // súmula com gols/cartões (futsal)
+      anoMinimo: null,
+    });
+    if (tipo === 'sets') cfg.desempate = ['pontos', 'vitorias', 'saldo', 'saldoPontos', 'confronto', 'sorteio'];
+    if (tipo === 'resultado') cfg.desempate = ['pontos', 'vitorias', 'confronto', 'sorteio'];
+    if (tipo !== 'gols' || !cfg.sumulaCompleta) cfg.desempate = cfg.desempate.filter((c) => c !== 'cartoes');
+    return cfg;
+  },
+
+  /** Um campeonato é interclasse? */
+  ehInterclasse(camp) {
+    return !!(camp && camp.tipo === 'interclasse');
   },
 
   NOMES_FORMATO: {

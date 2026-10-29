@@ -271,7 +271,9 @@ App.telas.time = {
     const time = D.time(timeId);
     if (!time) { App.ir('#/'); return; }
     const { camp, cat } = D.categoria(time.categoriaId);
-    App.titulo(time.nome, `#/camp/${camp.id}/${cat.id}/times`);
+    // Interclasse: o "time" é a turma naquela modalidade (nome e cor vêm da turma)
+    const inter = D.ehInterclasse(camp);
+    App.titulo(time.nome, `#/camp/${camp.id}/${cat.id}/${inter ? 'turmas' : 'times'}`);
     App.leitura(!App.podeEditar(camp));
 
     const resumo = R.resumoTime(time.id);
@@ -295,10 +297,10 @@ App.telas.time = {
           ${time.responsavel ? `<b>Responsável:</b> ${U.esc(time.responsavel)}<br>` : ''}
           ${time.telefone ? `<b>Telefone:</b> <a href="tel:${fone}">${U.esc(time.telefone)}</a> · <a href="https://wa.me/55${fone}" target="_blank" rel="noopener">WhatsApp</a>` : ''}
         </p>
-        <div class="grupo-botoes so-admin">
+        ${inter ? `<p class="suave">Turma <a href="#/turma/${camp.id}/${time.turmaId}">${U.esc(time.nome)}</a> em ${U.esc(cat.emoji || '')} ${U.esc(cat.nome)}. Nome e cor mudam na aba Turmas do interclasse.</p>` : `<div class="grupo-botoes so-admin">
           <button class="btn btn-pequeno" id="btn-editar-time">✏️ Editar</button>
           <button class="btn btn-pequeno btn-perigo" id="btn-apagar-time">Apagar time</button>
-        </div>
+        </div>`}
       </div>
 
       <div class="cartao">
@@ -340,8 +342,8 @@ App.telas.time = {
 
     document.getElementById('fab-jog').onclick = () => this.formJogador(time);
     document.getElementById('btn-colar-elenco').onclick = () => this.colarElenco(time);
-    document.getElementById('btn-editar-time').onclick = () => this.formTime(camp, cat, time);
-    document.getElementById('btn-apagar-time').onclick = async () => {
+    if (!inter) document.getElementById('btn-editar-time').onclick = () => this.formTime(camp, cat, time);
+    if (!inter) document.getElementById('btn-apagar-time').onclick = async () => {
       const temJogos = jogos.some((j) => j.sumula);
       const msg = `Apagar o time ${time.nome}?` + (temJogos ? ' Ele já tem súmulas: a classificação e as estatísticas vão ficar incompletas.' : '') + ' Não dá para desfazer.';
       if (!(await U.confirmar(msg, 'Apagar', 'btn-perigo'))) return;

@@ -20,7 +20,13 @@ App.telas.relatorios = {
     let voltar = '#/';
     let titulo = 'Relatório';
 
-    if (tipo === 'sumula') {
+    if (tipo === 'medalhas') {
+      const camp = D.campeonato(id);
+      if (!camp) { App.ir('#/'); return; }
+      voltar = `#/inter/${camp.id}/medalhas`;
+      titulo = 'Quadro de medalhas';
+      html = this.medalhas(camp);
+    } else if (tipo === 'sumula') {
       const jogo = D.jogo(id);
       if (!jogo) { App.ir('#/'); return; }
       voltar = `#/sumula/${jogo.id}`;
@@ -53,6 +59,25 @@ App.telas.relatorios = {
   },
 
   /* ---------- Súmula oficial ---------- */
+  /* ---------- Quadro de medalhas (interclasse) ---------- */
+  medalhas(camp) {
+    const U = App.util;
+    const I = App.telas.interclasse;
+    const nome = (id) => U.esc(I.nomeTurma(camp, id));
+    const comPodio = camp.categorias.filter((c) => c.podio && c.podio.confirmado);
+    return `<h1>${U.esc(camp.nome)}</h1>
+      <p class="sub">Quadro de medalhas${camp.local ? ' · ' + U.esc(camp.local) : ''} · ${comPodio.length} de ${camp.categorias.length} modalidades com pódio</p>
+      ${I.htmlQuadro(camp, true)}
+      <h2>Pódios por modalidade</h2>
+      <table><thead><tr><th>Modalidade</th><th>🥇 Ouro</th><th>🥈 Prata</th><th>🥉 Bronze</th></tr></thead><tbody>
+      ${camp.categorias.map((c) => {
+        const p = c.podio && c.podio.confirmado ? c.podio : null;
+        return `<tr><td>${U.esc(c.emoji || '')} ${U.esc(c.nome)}</td>${p
+          ? `<td>${nome(p.ouro)}</td><td>${p.prata ? nome(p.prata) : '—'}</td><td>${(p.bronze || []).map(nome).join(', ') || '—'}</td>`
+          : '<td colspan="3"><i>em andamento</i></td>'}</tr>`;
+      }).join('')}</tbody></table>`;
+  },
+
   sumula(jogo) {
     const D = App.dados;
     const U = App.util;
@@ -159,7 +184,9 @@ App.telas.relatorios = {
       const fora = D.time(j.foraId);
       const p = R.placar(j);
       const pen = R.temPenaltis(j) ? R.placarPenaltis(j) : null;
-      const placar = j.status === 'encerrado' ? `${p.casa} × ${p.fora}${pen ? ` (${pen.casa}×${pen.fora} pên.)` : ''}` : '×';
+      let placar = j.status === 'encerrado' ? `${p.casa} × ${p.fora}${pen ? ` (${pen.casa}×${pen.fora} pên.)` : ''}` : '×';
+      const especial = j.status === 'encerrado' && App.telas.interclasse.placarEspecial(j);
+      if (especial) placar = especial.replace('<small>', ' (').replace('</small>', ')');
       html += `<tr><td class="n">${R.numeroJogo(j)}</td><td class="n">${U.dataCurta(j.data) || '—'}</td><td class="n">${U.esc(j.hora || '—')}</td><td class="n">${U.esc(j.quadra || '—')}</td>
         ${temGrupo ? `<td class="n">${U.esc((grupos[j.grupoId] || '').replace('Grupo ', ''))}</td>` : ''}
         <td>${casa ? U.nomeTime(casa) : U.esc(R.textoOrigem(j.origemCasa, cat.id))}</td><td class="n"><b>${placar}</b></td><td>${fora ? U.nomeTime(fora) : U.esc(R.textoOrigem(j.origemFora, cat.id))}</td></tr>`;
@@ -179,8 +206,13 @@ App.telas.relatorios = {
 
     let html = '';
     const est = R.estruturaClassificacao(cat);
-    if (est.geral) html += tabela('Classificação', R.classificacao(cat.id));
-    est.grupos.forEach((g) => { html += tabela(g.nome, R.classificacao(cat.id, g.id)); });
+    // Interclasse por sets ou V/E/D: tabela com as colunas da modalidade
+    const tipoPlacar = R.tipoPlacar(cat);
+    const tab = tipoPlacar === 'gols' ? tabela : (titulo, linhas) => `<h2>${U.esc(titulo)}</h2>
+      <table><thead><tr><th class="n">#</th><th>Turma</th><th class="n">P</th><th class="n">J</th><th class="n">V</th>${tipoPlacar === 'sets' ? '' : '<th class="n">E</th>'}<th class="n">D</th>${tipoPlacar === 'sets' ? '<th class="n">SV</th><th class="n">SP</th><th class="n">SS</th><th class="n">PS</th>' : ''}</tr></thead>
+      <tbody>${linhas.map((l) => `<tr><td class="n">${l.pos}</td><td>${U.nomeTime(D.time(l.timeId))}</td><td class="n"><b>${l.pts}</b></td><td class="n">${l.j}</td><td class="n">${l.v}</td>${tipoPlacar === 'sets' ? '' : `<td class="n">${l.e}</td>`}<td class="n">${l.d}</td>${tipoPlacar === 'sets' ? `<td class="n">${l.gp}</td><td class="n">${l.gc}</td><td class="n">${l.sg}</td><td class="n">${l.sp || 0}</td>` : ''}</tr>`).join('')}</tbody></table>`;
+    if (est.geral) html += tab('Classificação', R.classificacao(cat.id));
+    est.grupos.forEach((g) => { html += tab(g.nome, R.classificacao(cat.id, g.id)); });
     if (est.mata) {
       const mata = D.jogosDaCategoria(cat.id).filter((j) => j.fase === 'mata' && !j.bye);
       if (mata.length) {

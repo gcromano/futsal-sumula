@@ -557,6 +557,10 @@ App.tabela = {
     const D = App.dados;
     const U = App.util;
     const { camp, cat } = D.categoria(catId);
+    // Interclasse: os "times" são as turmas — não cria time solto
+    if (D.ehInterclasse(camp) && resultado.timesNovos.length) {
+      throw new Error(`Estas turmas não participam desta modalidade: ${resultado.timesNovos.join(', ')}. Cadastre/marque as turmas antes.`);
+    }
     // Confere ANTES de gravar qualquer coisa (para não importar pela metade)
     if (!criarTimes && resultado.timesNovos.length) {
       throw new Error(`Estes times não existem nesta categoria: ${resultado.timesNovos.join(', ')}.`);

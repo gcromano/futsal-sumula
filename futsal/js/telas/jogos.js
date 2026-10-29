@@ -201,6 +201,12 @@ App.telas.jogos = {
     if (jogo.status === 'encerrado') { U.toast('Este jogo já está encerrado. Abra o jogo e use “Reabrir” para corrigir.', 'aviso', 4000); return; }
     const mata = jogo.fase === 'mata';
     const temEventos = jogo.sumula && jogo.sumula.eventos.length;
+    // Interclasse: modalidades por sets ou por vitória/empate/derrota têm janela própria
+    const { cat } = D.categoria(jogo.categoriaId);
+    const tipo = App.regras.tipoPlacar(cat);
+    if (tipo === 'sets') { this.resultadoSets(jogo, casa, fora, cat); return; }
+    if (tipo === 'resultado') { this.resultadoVED(jogo, casa, fora, cat); return; }
+    const semEmpate = cat.config.permiteEmpate === false; // ex.: basquete (só no interclasse)
     const campoGol = (nome, rotulo) => `<label class="campo" style="text-align:center"><span>${U.esc(rotulo)}</span>
       <input type="number" name="${nome}" min="0" max="99" inputmode="numeric" style="font-size:2rem;text-align:center;font-weight:800" required></label>`;
 
@@ -237,6 +243,10 @@ App.telas.jogos = {
             if (!ok(d.casa) || !ok(d.fora)) { U.toast('Digite os gols dos dois times.', 'erro'); return false; }
             let penCasa = null;
             let penFora = null;
+            if (semEmpate && d.casa === d.fora) {
+              U.toast('Esta modalidade não tem empate: o placar precisa ter um vencedor.', 'erro', 4000);
+              return false;
+            }
             if (mata && d.casa === d.fora) {
               if (!ok(d.penCasa) || !ok(d.penFora) || d.penCasa === d.penFora) {
                 U.toast('Empate no mata-mata: digite os pênaltis (com um vencedor).', 'erro', 4000);
@@ -255,6 +265,118 @@ App.telas.jogos = {
           },
         },
       ],
+    });
+  },
+
+  /** Grava o resultado rápido (qualquer tipo) e encerra o jogo. */
+  gravarResultado(jogo, placarRapido, texto) {
+    jogo.placarRapido = placarRapido;
+    jogo.sumula = null;
+    jogo.status = 'encerrado';
+    App.regras.atualizarMataMata(jogo.categoriaId);
+    App.dados.salvar();
+    App.util.toast(texto, 'ok', 3500);
+    App.render();
+  },
+
+  /**
+   * SETS (vôlei): placar de cada set. Vence quem ganhar mais sets
+   * (melhor de 3: 2 sets; melhor de 5: 3 sets).
+   */
+  resultadoSets(jogo, casa, fora, cat) {
+    const U = App.util;
+    const melhorDe = cat.config.melhorDe === 5 ? 5 : 3;
+    const precisa = Math.ceil(melhorDe / 2);
+    const linhas = Array.from({ length: melhorDe }, (_, i) => `
+      <div class="campos-2" style="align-items:center">
+        <label class="campo" style="text-align:center"><span>${i + 1}º set · ${U.esc(casa.nome)}</span>
+          <input type="number" min="0" max="99" inputmode="numeric" data-set="${i}" data-lado="casa" style="font-size:1.4rem;text-align:center;font-weight:800"></label>
+        <label class="campo" style="text-align:center"><span>${i + 1}º set · ${U.esc(fora.nome)}</span>
+          <input type="number" min="0" max="99" inputmode="numeric" data-set="${i}" data-lado="fora" style="font-size:1.4rem;text-align:center;font-weight:800"></label>
+      </div>`).join('');
+
+    U.modal({
+      titulo: '🏐 Resultado por sets',
+      html: `<p class="suave" style="margin-top:0">Melhor de ${melhorDe}: vence quem ganhar ${precisa} sets. Preencha só os sets jogados.</p>
+        <form id="form-sets">${linhas}</form><p id="resumo-sets" class="centro" style="font-weight:800"></p>`,
+      aoAbrir: () => {
+        const f = document.getElementById('form-sets');
+        const resumo = () => {
+          const r = this.lerSets(f, melhorDe);
+          document.getElementById('resumo-sets').textContent = r.erro ? '' : `Sets: ${casa.nome} ${r.casa} × ${r.fora} ${fora.nome}`;
+        };
+        f.oninput = resumo;
+        f.querySelector('input').focus();
+      },
+      botoes: [
+        { texto: 'Cancelar' },
+        {
+          texto: 'Encerrar com este placar', classe: 'btn-primario',
+          acao: () => {
+            const r = this.lerSets(document.getElementById('form-sets'), melhorDe);
+            if (r.erro) { U.toast(r.erro, 'erro', 4500); return false; }
+            this.gravarResultado(jogo, { casa: r.casa, fora: r.fora, penCasa: null, penFora: null, sets: r.sets },
+              `Resultado lançado: ${casa.nome} ${r.casa} × ${r.fora} ${fora.nome} (sets)`);
+          },
+        },
+      ],
+    });
+  },
+
+  /** Lê e confere os sets do formulário. Devolve { sets, casa, fora } ou { erro }. */
+  lerSets(form, melhorDe) {
+    const precisa = Math.ceil(melhorDe / 2);
+    const sets = [];
+    for (let i = 0; i < melhorDe; i++) {
+      const a = form.querySelector(`[data-set="${i}"][data-lado="casa"]`).value;
+      const b = form.querySelector(`[data-set="${i}"][data-lado="fora"]`).value;
+      if (a === '' && b === '') continue;
+      if (a === '' || b === '') return { erro: `Preencha os dois lados do ${i + 1}º set.` };
+      sets.push([Number(a), Number(b)]);
+    }
+    return this.conferirSets(sets, melhorDe, precisa);
+  },
+
+  /** Regras dos sets: sem set empatado, vencedor com o número certo de sets, nada depois do fim. */
+  conferirSets(sets, melhorDe, precisa = Math.ceil(melhorDe / 2)) {
+    if (!sets.length) return { erro: 'Digite o placar de pelo menos um set.' };
+    let casa = 0;
+    let fora = 0;
+    for (let i = 0; i < sets.length; i++) {
+      const [a, b] = sets[i];
+      if (a === b) return { erro: `O ${i + 1}º set não pode terminar empatado.` };
+      if (casa === precisa || fora === precisa) return { erro: `O jogo já tinha acabado antes do ${i + 1}º set.` };
+      if (a > b) casa++; else fora++;
+    }
+    if (casa !== precisa && fora !== precisa) return { erro: `Ninguém chegou a ${precisa} sets: confira o placar.` };
+    // Guardado como lista de objetos (o Firestore não aceita lista dentro de lista)
+    return { sets: sets.map(([a, b]) => ({ casa: a, fora: b })), casa, fora };
+  },
+
+  /** VITÓRIA / EMPATE / DERROTA, sem placar (xadrez, tênis de mesa...). */
+  resultadoVED(jogo, casa, fora, cat) {
+    const U = App.util;
+    const podeEmpatar = cat.config.permiteEmpate !== false && jogo.fase !== 'mata';
+    const opcoes = [
+      { valor: 'casa', texto: `🏆 Vitória: ${casa.nome}` },
+      ...(podeEmpatar ? [{ valor: 'empate', texto: '🤝 Empate' }] : []),
+      { valor: 'fora', texto: `🏆 Vitória: ${fora.nome}` },
+    ];
+    U.modal({
+      titulo: `${cat.emoji || '🏅'} Resultado`,
+      html: `<p class="suave" style="margin-top:0">${U.esc(casa.nome)} × ${U.esc(fora.nome)}</p>
+        <div style="display:grid;gap:8px">${opcoes.map((o) => `<button type="button" class="btn btn-bloco" data-ved="${o.valor}" style="min-height:56px">${U.esc(o.texto)}</button>`).join('')}</div>`,
+      botoes: [{ texto: 'Cancelar' }],
+      aoAbrir: (m) => {
+        m.el.querySelectorAll('[data-ved]').forEach((b) => {
+          b.onclick = () => {
+            const r = b.dataset.ved;
+            m.fechar();
+            const placar = { casa: r === 'casa' ? 1 : 0, fora: r === 'fora' ? 1 : 0, penCasa: null, penFora: null, resultado: r };
+            this.gravarResultado(jogo, placar, r === 'empate' ? 'Empate lançado.' : `Vitória: ${r === 'casa' ? casa.nome : fora.nome}`);
+          };
+        });
+      },
     });
   },
 
@@ -333,7 +455,8 @@ App.telas.jogos = {
     U.modal({
       titulo: `Conferir importação (${jogos.length} jogo${jogos.length === 1 ? '' : 's'})`,
       html: `
-        ${timesNovos.length ? `<div class="aviso-faixa amarela">⚠️ ${timesNovos.length === 1 ? 'Este time não existe' : 'Estes times não existem'} na ${U.esc(cat.nome)}:
+        ${timesNovos.length && App.dados.ehInterclasse(App.dados.categoria(cat.id).camp) ? `<div class="aviso-faixa vermelha">⚠️ ${timesNovos.length === 1 ? 'Esta turma não está' : 'Estas turmas não estão'} na modalidade: <b>${timesNovos.map(U.esc).join(', ')}</b>.<br>Confira o nome ou marque a turma na aba Turmas da modalidade.</div>` : ''}
+        ${timesNovos.length && !App.dados.ehInterclasse(App.dados.categoria(cat.id).camp) ? `<div class="aviso-faixa amarela">⚠️ ${timesNovos.length === 1 ? 'Este time não existe' : 'Estes times não existem'} na ${U.esc(cat.nome)}:
           <b>${timesNovos.map(U.esc).join(', ')}</b>.<br>Volte e corrija o nome, ou crie ${timesNovos.length === 1 ? 'o time' : 'os times'} (sem jogadores; dá para completar depois).</div>` : ''}
         ${erros.length ? `<div class="aviso-faixa vermelha">${erros.length} linha(s) serão ignoradas:<br>
           ${erros.map((e) => `<small>Linha ${e.linha}: “${U.esc(e.texto)}” — ${U.esc(e.motivo)}</small>`).join('<br>')}</div>` : ''}
@@ -346,7 +469,7 @@ App.telas.jogos = {
           </tbody></table></div>` : '<p class="vazio">Nenhum jogo reconhecido.</p>'}`,
       botoes: [
         { texto: '← Voltar', acao: () => { setTimeout(() => this.importar(cat), 0); } },
-        ...(jogos.length ? [{
+        ...(jogos.length && !(timesNovos.length && App.dados.ehInterclasse(App.dados.categoria(cat.id).camp)) ? [{
           texto: timesNovos.length ? `Criar times e ${jogos.length} jogos` : `Criar ${jogos.length} jogos`,
           classe: 'btn-primario',
           acao: () => {

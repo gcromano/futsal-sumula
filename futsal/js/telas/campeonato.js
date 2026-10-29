@@ -31,7 +31,10 @@ App.telas.campeonato = {
     const cat = camp.categorias.find((c) => c.id === catId) || camp.categorias[0];
     aba = aba || 'jogos';
     if (aba === 'config' && !pode) aba = 'jogos';
-    App.titulo(camp.nome, '#/');
+    // Interclasse: cada "categoria" é uma modalidade; o início é a página do interclasse
+    const inter = D.ehInterclasse(camp);
+    if (inter && !cat) { App.ir(`#/inter/${camp.id}`); return; }
+    App.titulo(camp.nome, inter ? `#/inter/${camp.id}/modalidades` : '#/');
     const selo = App.nuvem.ativo
       ? ` <span class="etiqueta ${camp.visibilidade === 'publico' ? 'azul' : ''}">${camp.visibilidade === 'publico' ? '🌐 Público' : '🔒 Privado'}</span>` : '';
 
@@ -42,8 +45,8 @@ App.telas.campeonato = {
         <button class="btn btn-pequeno so-admin" id="btn-editar-camp">✏️ Editar</button>
       </div>
       <div class="chips">
-        ${camp.categorias.map((c) => `<a class="chip ${cat && c.id === cat.id ? 'ativo' : ''}" href="#/camp/${camp.id}/${c.id}/${aba}">${U.esc(c.nome)}</a>`).join('')}
-        <button class="chip so-admin" id="btn-nova-cat">+ Categoria</button>
+        ${camp.categorias.map((c) => `<a class="chip ${cat && c.id === cat.id ? 'ativo' : ''}" href="#/camp/${camp.id}/${c.id}/${aba}">${inter ? U.esc(c.emoji || '') + ' ' : ''}${U.esc(c.nome)}</a>`).join('')}
+        <button class="chip so-admin" id="btn-nova-cat">${inter ? '+ Modalidade' : '+ Categoria'}</button>
       </div>`;
 
     if (!cat) {
@@ -54,7 +57,7 @@ App.telas.campeonato = {
     }
 
     html += `<nav class="abas">
-      ${this.ABAS.filter(([id]) => pode || id !== 'config').map(([id, nome]) => `<a class="aba ${aba === id ? 'ativo' : ''}" href="#/camp/${camp.id}/${cat.id}/${id}">${nome}</a>`).join('')}
+      ${(inter ? App.telas.interclasse.abasModalidade(cat) : this.ABAS).filter(([id]) => pode || id !== 'config').map(([id, nome]) => `<a class="aba ${aba === id ? 'ativo' : ''}" href="#/camp/${camp.id}/${cat.id}/${id}">${nome}</a>`).join('')}
     </nav><div id="conteudo-aba"></div>`;
     App.main().innerHTML = html;
     this.ligarTopo(camp);
@@ -66,7 +69,9 @@ App.telas.campeonato = {
       times: () => this.abaTimes(area, camp, cat),
       estatisticas: () => this.abaEstatisticas(area, camp, cat),
       suspensos: () => this.abaSuspensos(area, camp, cat),
-      config: () => this.abaConfig(area, camp, cat),
+      config: () => (inter ? App.telas.interclasse.abaConfigModalidade(area, camp, cat) : this.abaConfig(area, camp, cat)),
+      podio: () => App.telas.interclasse.abaPodio(area, camp, cat),
+      turmas: () => App.telas.interclasse.abaParticipantes(area, camp, cat),
     }[aba] || (() => this.abaJogos(area, camp, cat));
     desenhar();
   },
@@ -75,7 +80,13 @@ App.telas.campeonato = {
   ligarTopo(camp) {
     const D = App.dados;
     const U = App.util;
-    document.getElementById('btn-editar-camp').onclick = () => App.telas.inicio.formCampeonato(camp);
+    document.getElementById('btn-editar-camp').onclick = () => (D.ehInterclasse(camp)
+      ? App.telas.interclasse.formInterclasse(camp)
+      : App.telas.inicio.formCampeonato(camp));
+    if (D.ehInterclasse(camp)) {
+      document.getElementById('btn-nova-cat').onclick = () => App.telas.interclasse.formModalidade(camp);
+      return;
+    }
     document.getElementById('btn-nova-cat').onclick = () => {
       U.modal({
         titulo: 'Nova categoria',
@@ -216,6 +227,8 @@ App.telas.campeonato = {
       const p = R.placar(j);
       const pen = R.temPenaltis(j) ? R.placarPenaltis(j) : null;
       centro = `${p.casa} × ${p.fora}${pen ? `<small>pên. ${pen.casa}×${pen.fora}</small>` : ''}`;
+      const especial = App.telas.interclasse.placarEspecial(j);
+      if (especial) centro = especial;
     }
     const nomeCasa = casa ? casa.nome : R.textoOrigem(j.origemCasa, j.categoriaId);
     const nomeFora = fora ? fora.nome : R.textoOrigem(j.origemFora, j.categoriaId);
@@ -294,11 +307,11 @@ App.telas.campeonato = {
     let html = `<div class="grupo-botoes"><a class="btn" href="#/imprimir/classificacao/${cat.id}">🖨️ Imprimir classificação</a></div>`;
 
     if (est.geral) {
-      html += `<div class="cartao"><h2>Classificação</h2>${this.tabelaClassificacao(R.classificacao(cat.id), 0)}</div>`;
+      html += `<div class="cartao"><h2>Classificação</h2>${this.tabelaClassificacao(R.classificacao(cat.id), 0, R.tipoPlacar(cat))}</div>`;
     }
     if (est.grupos.length) {
       html += `<div class="grade-cartoes">` + est.grupos.map((g) => `
-        <div class="cartao"><h2>${App.util.esc(g.nome)}</h2>${this.tabelaClassificacao(R.classificacao(cat.id, g.id), est.mata ? cfg.classificadosPorGrupo : 0)}</div>
+        <div class="cartao"><h2>${App.util.esc(g.nome)}</h2>${this.tabelaClassificacao(R.classificacao(cat.id, g.id), est.mata ? cfg.classificadosPorGrupo : 0, R.tipoPlacar(cat))}</div>
       `).join('') + `</div>`;
     }
     if (est.mata) {
@@ -309,10 +322,11 @@ App.telas.campeonato = {
   },
 
   /** Tabela de classificação. "destaque" = quantos primeiros ficam marcados (classificados). */
-  tabelaClassificacao(linhas, destaque) {
+  tabelaClassificacao(linhas, destaque, tipo = 'gols') {
     const U = App.util;
     const D = App.dados;
     if (!linhas.length) return '<p class="vazio">Sem times.</p>';
+    if (tipo !== 'gols') return this.tabelaClassificacaoInterclasse(linhas, destaque, tipo);
     return `<div class="tabela-rolagem"><table class="tabela">
       <thead><tr><th>#</th><th class="esq">Time</th><th>P</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th></tr></thead>
       <tbody>
@@ -487,7 +501,7 @@ App.telas.campeonato = {
         ${N.ativo ? `<p><b>Visibilidade:</b> ${camp.visibilidade === 'publico'
           ? '🌐 Público — qualquer pessoa vê tabela, resultados e estatísticas (sem dados pessoais).'
           : '🔒 Privado — só os admins abaixo veem.'}</p>` : ''}
-        <p><b>Alerta de idade:</b> ${camp.alertaIdade === false ? 'desligado' : 'ligado'}</p>
+        ${App.dados.ehInterclasse(camp) ? '' : `<p><b>Alerta de idade:</b> ${camp.alertaIdade === false ? 'desligado' : 'ligado'}</p>`}
         <button class="btn btn-pequeno" id="btn-cfg-camp">✏️ Mudar nome, datas, visibilidade e alerta</button>
       </div>
       ${N.ativo ? `
@@ -555,13 +569,42 @@ App.telas.campeonato = {
     };
   },
 
+  /**
+   * Classificação de modalidades do interclasse:
+   * - sets: SV/SP = sets vencidos/perdidos, SS = saldo de sets, PS = saldo de pontos
+   * - resultado (V/E/D): sem colunas de placar
+   */
+  tabelaClassificacaoInterclasse(linhas, destaque, tipo) {
+    const U = App.util;
+    const D = App.dados;
+    const sinal = (n) => `${n > 0 ? '+' : ''}${n}`;
+    const cab = tipo === 'sets' ? '<th>SV</th><th>SP</th><th>SS</th><th>PS</th>' : '';
+    return `<div class="tabela-rolagem"><table class="tabela">
+      <thead><tr><th>#</th><th class="esq">Turma</th><th>P</th><th>J</th><th>V</th>${tipo === 'sets' ? '' : '<th>E</th>'}<th>D</th>${cab}</tr></thead>
+      <tbody>
+        ${linhas.map((l) => {
+          const t = D.time(l.timeId);
+          const extra = tipo === 'sets' ? `<td>${l.gp}</td><td>${l.gc}</td><td>${sinal(l.sg)}</td><td>${sinal(l.sp || 0)}</td>` : '';
+          return `<tr class="${l.pos <= destaque ? 'classifica' : ''}">
+            <td>${l.pos}</td>
+            <td class="time-celula"><a href="#/time/${t.id}" class="time-mini">${U.escudo(t)} ${U.esc(t.nome)}</a></td>
+            <td><b>${l.pts}</b></td><td>${l.j}</td><td>${l.v}</td>${tipo === 'sets' ? '' : `<td>${l.e}</td>`}<td>${l.d}</td>${extra}
+          </tr>`;
+        }).join('')}
+      </tbody></table></div>
+      ${tipo === 'sets' ? '<p class="suave">SV/SP: sets vencidos/perdidos · SS: saldo de sets · PS: saldo de pontos</p>' : ''}`;
+  },
+
   abaConfig(area, camp, cat) {
     const D = App.dados;
     const U = App.util;
     const c = cat.config;
     // Cópia da ordem de desempate, para reordenar antes de salvar
     let ordem = c.desempate.slice();
-    Object.keys(D.NOMES_DESEMPATE).forEach((k) => { if (!ordem.includes(k)) ordem.push(k); });
+    Object.keys(D.NOMES_DESEMPATE).forEach((k) => {
+      if (k === 'saldoPontos' && App.regras.tipoPlacar(cat) !== 'sets') return;
+      if (!ordem.includes(k)) ordem.push(k);
+    });
     let ativos = new Set(c.desempate);
 
     const opt = (valor, texto, atual) => `<option value="${valor}" ${String(atual) === String(valor) ? 'selected' : ''}>${texto}</option>`;

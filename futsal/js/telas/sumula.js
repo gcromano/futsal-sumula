@@ -91,6 +91,8 @@ App.telas.sumula = {
     if (jogo.placarRapido) { this.renderSimples(jogo, casa, fora, 'rapido'); return; }
     // Visitante abrindo jogo que ainda não começou
     if (!jogo.sumula && !this.pode) { this.renderSimples(jogo, casa, fora, 'agendado'); return; }
+    // Interclasse: modalidades sem súmula completa usam só o "lançar resultado"
+    if (D.ehInterclasse(camp) && !cat.config.sumulaCompleta) { this.renderSimples(jogo, casa, fora, 'agendado'); return; }
 
     // Súmula nova fica só na memória: é gravada na primeira ação (iniciar, gol...)
     if (!jogo.sumula) jogo.sumula = R.novaSumula(jogo);
@@ -238,23 +240,35 @@ App.telas.sumula = {
     const p = R.placar(jogo);
     const pen = R.temPenaltis(jogo) ? R.placarPenaltis(jogo) : null;
     const info = [`Jogo ${R.numeroJogo(jogo)}`, jogo.rodadaNome, jogo.data && U.dataBR(jogo.data), jogo.hora, jogo.quadra].filter(Boolean).join(' · ');
-    const lado = (t, gols) => `<div class="placar-time">${U.escudo(t)}<span class="nome">${U.esc(t.nome)}</span>
-      <div class="placar-gols">${tipo === 'rapido' ? gols : '–'}</div></div>`;
+    // Interclasse: placar por sets ou vitória/empate/derrota
+    const { camp, cat } = App.dados.categoria(jogo.categoriaId);
+    const inter = App.dados.ehInterclasse(camp);
+    const tipoPlacar = R.tipoPlacar(cat);
+    const r = jogo.placarRapido;
+    const marca = (lado) => (r.resultado === 'empate' || r.casa === r.fora ? 'E' : (lado === 'casa' ? r.casa > r.fora : r.fora > r.casa) ? 'V' : 'D');
+    const lado = (t, gols, qual) => `<div class="placar-time">${U.escudo(t)}<span class="nome">${U.esc(t.nome)}</span>
+      <div class="placar-gols">${tipo === 'rapido' ? (inter && tipoPlacar === 'resultado' ? marca(qual) : gols) : '–'}</div></div>`;
+    const textoRapido = inter
+      ? `✅ Resultado lançado${tipoPlacar === 'sets' ? ' (sets)' : ''}. Já conta na classificação.`
+      : '⚡ Resultado lançado sem súmula detalhada. Conta na classificação; gols e cartões não entram nas estatísticas.';
     App.main().innerHTML = `
-      <p class="suave centro" style="margin:0 0 8px">${U.esc(info)}</p>
-      ${tipo === 'rapido' ? `<div class="aviso-faixa verde">⚡ Resultado lançado sem súmula detalhada. Conta na classificação; gols e cartões não entram nas estatísticas.
-        <div class="grupo-botoes so-admin"><button class="btn btn-pequeno" id="btn-reabrir">🔓 Reabrir (apagar resultado)</button></div></div>` : ''}
+      <p class="suave centro" style="margin:0 0 8px">${inter ? U.esc(cat.emoji || '') + ' ' + U.esc(cat.nome) + ' · ' : ''}${U.esc(info)}</p>
+      ${tipo === 'rapido' ? `<div class="aviso-faixa verde">${textoRapido}
+        <div class="grupo-botoes so-admin"><button class="btn btn-pequeno" id="btn-reabrir">🔓 Reabrir (apagar resultado)</button></div></div>` : ''}${inter && tipo !== 'rapido' && this.pode ? `
+      <div class="grupo-botoes"><button class="btn btn-primario btn-bloco" id="btn-lancar" style="min-height:56px">⚡ Lançar resultado</button></div>` : ''}
       <div class="placar">
         <div class="placar-linha">
-          ${lado(casa, p.casa)}
+          ${lado(casa, p.casa, 'casa')}
           <div class="placar-centro"><div class="placar-periodo">${tipo === 'rapido' ? 'Final' : 'Ainda não começou'}</div>
-            ${pen ? `<div class="placar-penaltis">Pênaltis ${pen.casa} × ${pen.fora}</div>` : ''}</div>
-          ${lado(fora, p.fora)}
+            ${pen ? `<div class="placar-penaltis">Pênaltis ${pen.casa} × ${pen.fora}</div>` : ''}${inter && r && r.sets ? `<div class="placar-penaltis">${r.sets.map((s) => `${s.casa}-${s.fora}`).join(' · ')}</div>` : ''}</div>
+          ${lado(fora, p.fora, 'fora')}
         </div>
       </div>
       <div class="grupo-botoes"><a class="btn" href="#/imprimir/sumula/${jogo.id}">🖨️ Ver / imprimir</a></div>`;
     const b = document.getElementById('btn-reabrir');
     if (b) b.onclick = () => this.reabrir();
+    const l = document.getElementById('btn-lancar');
+    if (l) l.onclick = () => App.telas.jogos.resultadoRapido(jogo);
   },
 
   /** HTML da linha do tempo (mais recente em cima). */

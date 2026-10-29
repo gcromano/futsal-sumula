@@ -66,6 +66,7 @@ App.telas.inicio = {
         const feitos = jogos.filter((j) => j.status === 'encerrado').length;
         const aoVivo = jogos.filter((j) => j.status === 'andamento').length;
         const datas = [U.dataBR(c.dataInicio), U.dataBR(c.dataFim)].filter(Boolean).join(' a ');
+        if (D.ehInterclasse(c)) return this.cartaoInterclasse(c);
         const selos = N.ativo ? `
           <span class="etiqueta ${c.visibilidade === 'publico' ? 'azul' : ''}">${c.visibilidade === 'publico' ? '🌐 Público' : '🔒 Privado'}</span>
           ${N.ehAdmin(c) ? '<span class="etiqueta verde">Admin</span>' : ''}` : '';
@@ -88,8 +89,8 @@ App.telas.inicio = {
     App.main().innerHTML = html + (podeCriar ? '<button class="fab" id="fab-novo" aria-label="Novo campeonato">+</button>' : '');
 
     const ligar = (id, fn) => { const el = document.getElementById(id); if (el) el.onclick = fn; };
-    ligar('fab-novo', () => this.formCampeonato());
-    ligar('btn-novo', () => this.formCampeonato());
+    ligar('fab-novo', () => this.escolherTipo());
+    ligar('btn-novo', () => this.escolherTipo());
     ligar('btn-entrar', () => N.entrar());
     ligar('btn-exemplo', () => { const c = App.exemplo.carregar(); U.toast('Exemplo carregado!', 'ok'); App.ir(`#/camp/${c.id}`); });
     ligar('btn-migrar', () => this.migrar(locais));
@@ -112,6 +113,45 @@ App.telas.inicio = {
     App.dados.apagarDadosLocais();
     U.toast('Campeonatos locais apagados deste aparelho.', 'ok');
     App.render();
+  },
+
+  /** "+": campeonato de futsal ou interclasse (olimpíada escolar)? */
+  escolherTipo() {
+    App.util.modal({
+      titulo: 'Criar o quê?',
+      html: `<div style="display:grid;gap:10px">
+        <button type="button" class="btn btn-bloco" data-tipo="futsal" style="min-height:64px;justify-content:flex-start">⚽ <span style="text-align:left">Campeonato de futsal<br><small class="suave">categorias, súmula completa, suspensões</small></span></button>
+        <button type="button" class="btn btn-bloco" data-tipo="inter" style="min-height:64px;justify-content:flex-start">🏅 <span style="text-align:left">Interclasse<br><small class="suave">turmas, várias modalidades e quadro de medalhas</small></span></button>
+      </div>`,
+      botoes: [{ texto: 'Cancelar' }],
+      aoAbrir: (m) => {
+        m.el.querySelectorAll('[data-tipo]').forEach((b) => {
+          b.onclick = () => {
+            m.fechar();
+            if (b.dataset.tipo === 'inter') App.telas.interclasse.formInterclasse(); else this.formCampeonato();
+          };
+        });
+      },
+    });
+  },
+
+  /** Cartão de um interclasse na lista. */
+  cartaoInterclasse(c) {
+    const U = App.util;
+    const N = App.nuvem;
+    const datas = [U.dataBR(c.dataInicio), U.dataBR(c.dataFim)].filter(Boolean).join(' a ');
+    const comPodio = (c.categorias || []).filter((m) => m.podio && m.podio.confirmado).length;
+    const lider = App.regras.quadroMedalhas(c).lista.find((l) => l.total > 0);
+    return `
+      <a class="cartao cartao-link" href="#/inter/${c.id}">
+        <div class="linha-entre"><h2 style="margin:0">🏅 ${U.esc(c.nome)}</h2></div>
+        <p class="suave" style="margin:4px 0 8px">Interclasse${c.local ? ' · ' + U.esc(c.local) : ''}${datas ? ' · ' + datas : ''}</p>
+        <div class="linha">
+          ${N.ativo ? `<span class="etiqueta ${c.visibilidade === 'publico' ? 'azul' : ''}">${c.visibilidade === 'publico' ? '🌐 Público' : '🔒 Privado'}</span>${N.ehAdmin(c) ? '<span class="etiqueta verde">Admin</span>' : ''}` : ''}
+          ${(c.categorias || []).map((m) => `<span class="etiqueta verde">${U.esc(m.emoji || '')} ${U.esc(m.nome)}</span>`).join('')}
+          <span class="suave" style="margin-left:auto">${comPodio}/${(c.categorias || []).length} pódios${lider ? ` · lidera ${U.esc(lider.turma.nome)}` : ''}</span>
+        </div>
+      </a>`;
   },
 
   /** Envia os campeonatos que estavam só no aparelho para a nuvem. */

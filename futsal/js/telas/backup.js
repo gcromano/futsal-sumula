@@ -56,6 +56,7 @@ App.telas.backup = {
         <h2>🧪 Dados de exemplo</h2>
         <p class="suave">Adiciona um campeonato fictício${online ? ' (privado, só você vê)' : ''} com times, jogos e súmulas para testar. Não apaga nada.</p>
         <button class="btn btn-bloco" id="btn-exemplo">Adicionar campeonato de exemplo</button>
+        <button class="btn btn-bloco" id="btn-exemplo-inter" style="margin-top:8px">🏅 Adicionar interclasse de exemplo</button>
       </div>` : ''}
 
       ${!online ? `
@@ -97,6 +98,12 @@ App.telas.backup = {
       const camp = App.exemplo.carregar();
       U.toast('Campeonato de exemplo criado!', 'ok');
       App.ir(`#/camp/${camp.id}`);
+    });
+
+    ligar('btn-exemplo-inter', () => {
+      const camp = App.exemplo.carregarInterclasse();
+      U.toast('Interclasse de exemplo criado!', 'ok');
+      App.ir(`#/inter/${camp.id}`);
     });
 
     ligar('btn-apagar', async () => {

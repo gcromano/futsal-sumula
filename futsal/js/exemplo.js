@@ -205,4 +205,82 @@ App.exemplo = {
     D.salvar();
     return camp;
   },
+
+  /**
+   * INTERCLASSE DE EXEMPLO (privado; você é o admin no modo online).
+   * 6 turmas e 4 modalidades, uma de cada jeito:
+   *  ⚽ Futsal   — gols, súmula completa, mata-mata com 3º lugar (pódio pronto p/ confirmar)
+   *  🏐 Vôlei    — sets (melhor de 3), pontos corridos (pódio já confirmado)
+   *  🏀 Basquete — gols sem empate, mata-mata SEM 3º lugar (final hoje; 2 bronzes)
+   *  ♟️ Xadrez   — vitória/empate/derrota, pontos corridos (metade jogada, resto hoje)
+   */
+  carregarInterclasse() {
+    const D = App.dados;
+    const I = App.inter;
+    const hoje = I.hoje();
+    const diasAtras = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+    const camp = I.novo({ nome: 'Interclasse de exemplo', local: 'Quadra da escola', dataInicio: diasAtras(3), dataFim: hoje });
+    I.adicionarTurmas(camp, ['1º Ano A', '1º Ano B', '2º Ano A', '2º Ano B', '3º Ano A', '3º Ano B']);
+    const T = camp.turmas.map((t) => t.id);
+
+    const resultado = (jogo, placar) => {
+      jogo.placarRapido = Object.assign({ penCasa: null, penFora: null }, placar);
+      jogo.status = 'encerrado';
+      App.regras.atualizarMataMata(jogo.categoriaId);
+    };
+    const datar = (cat, data, horaIni) => {
+      D.jogosDaCategoria(cat.id).filter((j) => !j.bye).forEach((j, i) => {
+        j.data = data;
+        const m = horaIni * 60 + i * 40;
+        j.hora = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+        j.quadra = 'Quadra ' + (1 + (i % 2));
+      });
+    };
+
+    // ⚽ Futsal: 4 turmas, mata-mata com disputa de 3º
+    const futsal = I.adicionarModalidade(camp, { nome: 'Futsal', emoji: '⚽', tipoPlacar: 'gols', sumulaCompleta: true, formato: 'mata', terceiroLugar: true, turmaIds: T.slice(0, 4) });
+    App.tabela.gerar(futsal.id, { sortear: false });
+    datar(futsal, diasAtras(2), 9);
+    const semisF = D.jogosDaCategoria(futsal.id).filter((j) => j.rodadaNome === 'Semifinal');
+    resultado(semisF[0], { casa: 3, fora: 1 });
+    resultado(semisF[1], { casa: 2, fora: 2, penCasa: 4, penFora: 3 });
+    resultado(D.jogosDaCategoria(futsal.id).find((j) => j.rodadaNome === 'Disputa de 3º lugar'), { casa: 1, fora: 0 });
+    resultado(D.jogosDaCategoria(futsal.id).find((j) => j.rodadaNome === 'Final'), { casa: 2, fora: 3 });
+
+    // 🏐 Vôlei: sets, pontos corridos, 4 turmas — tudo jogado e pódio confirmado
+    const volei = I.adicionarModalidade(camp, { nome: 'Vôlei Feminino', emoji: '🏐', tipoPlacar: 'sets', melhorDe: 3, formato: 'pontos', turmaIds: T.slice(2, 6) });
+    App.tabela.gerar(volei.id, { sortear: false });
+    datar(volei, diasAtras(1), 14);
+    const placaresVolei = [[[25, 20], [25, 18]], [[22, 25], [25, 23], [15, 12]], [[25, 15], [20, 25], [10, 15]], [[25, 21], [25, 19]], [[18, 25], [25, 22], [15, 13]], [[25, 23], [25, 17]]];
+    D.jogosDaCategoria(volei.id).forEach((j, i) => {
+      const sets = placaresVolei[i];
+      resultado(j, { casa: sets.filter(([a, b]) => a > b).length, fora: sets.filter(([a, b]) => b > a).length, sets: sets.map(([a, b]) => ({ casa: a, fora: b })) });
+    });
+    I.definirPodio(volei, App.regras.podioSugerido(volei.id), false);
+
+    // 🏀 Basquete: sem empate, mata-mata SEM 3º lugar — semis jogadas, final hoje
+    const basquete = I.adicionarModalidade(camp, { nome: 'Basquete', emoji: '🏀', tipoPlacar: 'gols', permiteEmpate: false, formato: 'mata', terceiroLugar: false, turmaIds: [T[0], T[1], T[4], T[5]] });
+    App.tabela.gerar(basquete.id, { sortear: false });
+    datar(basquete, diasAtras(1), 9);
+    D.jogosDaCategoria(basquete.id).filter((j) => j.rodadaNome === 'Semifinal').forEach((j, i) => resultado(j, i ? { casa: 18, fora: 22 } : { casa: 31, fora: 27 }));
+    const finalB = D.jogosDaCategoria(basquete.id).find((j) => j.rodadaNome === 'Final');
+    finalB.data = hoje; finalB.hora = '16:00'; finalB.quadra = 'Quadra 1';
+
+    // ♟️ Xadrez: V/E/D, pontos corridos com as 6 turmas — metade jogada, resto hoje
+    const xadrez = I.adicionarModalidade(camp, { nome: 'Xadrez', emoji: '♟️', tipoPlacar: 'resultado', formato: 'pontos', turmaIds: T });
+    App.tabela.gerar(xadrez.id, { sortear: false });
+    const jx = D.jogosDaCategoria(xadrez.id);
+    jx.forEach((j, i) => {
+      if (i < 9) {
+        j.data = diasAtras(1); j.hora = `${String(8 + Math.floor(i / 3)).padStart(2, '0')}:${String((i % 3) * 20).padStart(2, '0')}`;
+        const r = ['casa', 'fora', 'empate'][i % 3];
+        resultado(j, { casa: r === 'casa' ? 1 : 0, fora: r === 'fora' ? 1 : 0, resultado: r });
+      } else {
+        j.data = hoje; j.hora = `${String(10 + Math.floor((i - 9) / 3)).padStart(2, '0')}:${String(((i - 9) % 3) * 20).padStart(2, '0')}`; j.quadra = 'Sala de xadrez';
+      }
+    });
+
+    D.salvar();
+    return camp;
+  },
 };

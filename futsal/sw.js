@@ -19,7 +19,7 @@
      Mude a VERSAO só se mudar a lista ARQUIVOS abaixo.
    ========================================================= */
 
-const VERSAO = 'futsal-v6';
+const VERSAO = 'futsal-v7';
 const TEMPO_LIMITE_REDE = 4000; // ms: depois disso usa o cache (internet fraca na quadra)
 
 const ARQUIVOS = [
@@ -39,6 +39,7 @@ const ARQUIVOS = [
   './js/nuvem.js',
   './js/tabela.js',
   './js/regras.js',
+  './js/interclasse.js',
   './js/exemplo.js',
   './js/app.js',
   './js/telas/inicio.js',
@@ -48,6 +49,7 @@ const ARQUIVOS = [
   './js/telas/sumula.js',
   './js/telas/relatorios.js',
   './js/telas/backup.js',
+  './js/telas/interclasse.js',
   // Bandeiras das seleções (flag-icons, licença MIT) — guardadas para funcionar offline
   './icons/bandeiras/ar.svg',
   './icons/bandeiras/at.svg',

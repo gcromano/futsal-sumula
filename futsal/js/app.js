@@ -23,6 +23,8 @@ App.rotas = [
   [/^#\/sumula\/([^/]+)$/, (m) => App.telas.sumula.render(m[1])],
   [/^#\/imprimir\/([^/]+)\/([^/]+)$/, (m) => App.telas.relatorios.render(m[1], m[2])],
   [/^#\/backup$/, () => App.telas.backup.render()],
+  [/^#\/inter\/([^/]+)(?:\/([^/]+))?$/, (m) => App.telas.interclasse.render(m[1], m[2])],
+  [/^#\/turma\/([^/]+)\/([^/]+)$/, (m) => App.telas.interclasse.renderTurma(m[1], m[2])],
 ];
 
 /** Função de "limpeza" da tela atual (ex.: parar o cronômetro da súmula). */

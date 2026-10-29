@@ -269,6 +269,20 @@ App.regras = {
       l.cartoes = l.amarelos + l.vermelhos * 3; // vermelho "pesa" 3 amarelos
     });
 
+    // Modalidade por SETS: gp/gc = sets ganhos/perdidos; pp/pc = pontos dentro dos sets
+    if (this.tipoPlacar(cat) === 'sets') {
+      lista.forEach((l) => { l.pp = 0; l.pc = 0; });
+      for (const j of jogos) {
+        // sets = [{ casa: 25, fora: 20 }, ...]
+        const sets = (j.placarRapido && j.placarRapido.sets) || [];
+        for (const { casa: a, fora: b } of sets) {
+          if (linhas[j.casaId]) { linhas[j.casaId].pp += a; linhas[j.casaId].pc += b; }
+          if (linhas[j.foraId]) { linhas[j.foraId].pp += b; linhas[j.foraId].pc += a; }
+        }
+      }
+      lista.forEach((l) => { l.sp = l.pp - l.pc; });
+    }
+
     const ordenada = this.ordenar(lista, cfg.desempate, { jogos, cfg });
     ordenada.forEach((l, i) => { l.pos = i + 1; });
     return ordenada;
@@ -309,6 +323,7 @@ App.regras = {
       case 'golsPro': return linha.gp;
       case 'cartoes': return -linha.cartoes; // menos cartões é melhor
       case 'sorteio': return linha.sorteio;
+      case 'saldoPontos': return linha.sp || 0; // sets: saldo de pontos
       case 'confronto': {
         // Pontos ganhos só nos jogos entre os times empatados
         const ids = new Set(empatados.map((l) => l.timeId));
@@ -504,6 +519,90 @@ App.regras = {
     // Sem jogos ainda: segue o formato configurado
     const geral = liga || (!jogos.length && cat.config.formato === 'pontos') || (!grupos.length && !mata);
     return { geral, grupos, mata };
+  },
+
+  /* =======================================================
+     INTERCLASSE: tipo de placar, pódio e quadro de medalhas
+     ======================================================= */
+
+  /** Tipo de placar da categoria/modalidade: 'gols' (padrão), 'sets' ou 'resultado'. */
+  tipoPlacar(cat) {
+    return (cat && cat.config && cat.config.tipoPlacar) || 'gols';
+  },
+
+  /** Modalidade terminou? (tem jogos e todos com dois times estão encerrados) */
+  modalidadeConcluida(catId) {
+    const jogos = App.dados.jogosDaCategoria(catId).filter((j) => !j.bye);
+    return jogos.length > 0 && jogos.every((j) => j.status === 'encerrado');
+  },
+
+  /** Turma de um time da modalidade (time.turmaId) */
+  turmaDoTime(timeId) {
+    const t = App.dados.time(timeId);
+    return t ? t.turmaId || null : null;
+  },
+
+  /**
+   * Pódio calculado pelo app (em turmaIds): { ouro, prata, bronze: [] }.
+   * - Com mata-mata: final (ouro/prata) + disputa de 3º (bronze) ou,
+   *   sem disputa de 3º, os dois perdedores das semifinais (dois bronzes).
+   * - Sem mata-mata: 1º, 2º e 3º da classificação.
+   * Devolve null se ainda não dá para saber.
+   */
+  podioSugerido(catId) {
+    const D = App.dados;
+    const { cat } = D.categoria(catId);
+    if (!cat || !this.modalidadeConcluida(catId)) return null;
+    const jogos = D.jogosDaCategoria(catId);
+    const turma = (timeId) => this.turmaDoTime(timeId);
+    const final = jogos.find((j) => j.fase === 'mata' && j.rodadaNome === 'Final');
+    if (final) {
+      const ouro = turma(this.vencedor(final));
+      const prata = turma(this.perdedor(final));
+      const terceiro = jogos.find((j) => j.fase === 'mata' && (j.terceiro || j.rodadaNome === 'Disputa de 3º lugar'));
+      let bronze = [];
+      if (terceiro) bronze = [turma(this.vencedor(terceiro))];
+      else bronze = jogos.filter((j) => j.fase === 'mata' && j.rodadaNome === 'Semifinal' && !j.bye).map((j) => turma(this.perdedor(j)));
+      return { ouro, prata, bronze: bronze.filter(Boolean) };
+    }
+    const tabela = this.classificacao(catId);
+    return { ouro: tabela[0] && turma(tabela[0].timeId), prata: tabela[1] && turma(tabela[1].timeId), bronze: tabela[2] ? [turma(tabela[2].timeId)] : [] };
+  },
+
+  /**
+   * Quadro de medalhas do interclasse (só pódios CONFIRMADOS pelo admin).
+   * criterio 'olimpico': ouro > prata > bronze; 'pontos': ouro/prata/bronze valem pontos.
+   */
+  quadroMedalhas(camp) {
+    const med = camp.medalhas || {};
+    const pts = Object.assign({ ouro: 3, prata: 2, bronze: 1 }, med.pontos || {});
+    const linhas = {};
+    (camp.turmas || []).forEach((t) => { linhas[t.id] = { turma: t, o: 0, p: 0, b: 0, modalidades: [] }; });
+    const somar = (turmaId, tipo, cat) => {
+      const l = linhas[turmaId];
+      if (!l) return;
+      l[tipo]++;
+      l.modalidades.push({ cat, medalha: { o: 'ouro', p: 'prata', b: 'bronze' }[tipo] });
+    };
+    for (const cat of camp.categorias) {
+      const p = cat.podio;
+      if (!p || !p.confirmado) continue;
+      somar(p.ouro, 'o', cat);
+      somar(p.prata, 'p', cat);
+      (p.bronze || []).forEach((b) => somar(b, 'b', cat));
+    }
+    const lista = Object.values(linhas).map((l) => Object.assign(l, { total: l.o + l.p + l.b, pontos: l.o * pts.ouro + l.p * pts.prata + l.b * pts.bronze }));
+    const nome = (a, b) => a.turma.nome.localeCompare(b.turma.nome, 'pt-BR');
+    lista.sort(med.criterio === 'pontos'
+      ? (a, b) => b.pontos - a.pontos || b.o - a.o || b.p - a.p || nome(a, b)
+      : (a, b) => b.o - a.o || b.p - a.p || b.b - a.b || nome(a, b));
+    // Posição: empatados (mesmos números) dividem a posição
+    lista.forEach((l, i) => {
+      const ant = lista[i - 1];
+      const igual = ant && (med.criterio === 'pontos' ? ant.pontos === l.pontos && ant.o === l.o && ant.p === l.p : ant.o === l.o && ant.p === l.p && ant.b === l.b);
+      l.pos = igual ? ant.pos : i + 1;
+    });
+    return { lista, pts, criterio: med.criterio === 'pontos' ? 'pontos' : 'olimpico' };
   },
 
   /** Jogador com idade fora da categoria? Devolve texto do alerta ou ''. */

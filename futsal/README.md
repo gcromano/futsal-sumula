@@ -36,6 +36,8 @@ Funciona no celular (instalável e offline) e no computador, hospedado de graça
 - **Relatórios para imprimir ou salvar em PDF**: súmula oficial, tabela de jogos, classificação e artilharia.
 - **Backup** em arquivo `.json` para guardar ou passar os dados para outro aparelho.
 - **Online:** login Google, admins por campeonato, visibilidade pública/privada, histórico de quem alterou o quê.
+- **🏅 Interclasse** (olimpíada escolar): turmas, várias modalidades (futsal, vôlei por sets, basquete, xadrez...),
+  pódio automático e quadro de medalhas. Veja a seção abaixo.
 
 ---
 
@@ -142,6 +144,32 @@ Se o aparelho tinha dados da versão antiga (sem nuvem), aparece na tela inicial
 
 ---
 
+## 🏅 Interclasse (olimpíada escolar)
+
+**Criar:** botão **+** → **Interclasse** → nome, datas, quem pode ver (padrão 🔒 privado) e, se quiser, já cole as
+turmas (uma por linha). Quem cria vira admin; admins, histórico e segurança funcionam igual aos campeonatos.
+
+1. **Turmas** (aba Turmas): cadastradas uma vez e usadas em todas as modalidades. Nome e cor. Dá para colar a lista.
+2. **Modalidades** (aba Modalidades → **+**): escolha uma sugestão ou digite nome + emoji, e defina:
+   - **Tipo de placar:** *gols/pontos* (com ou sem empate — basquete sem), *sets* (vôlei, melhor de 3 ou 5) ou
+     *vitória/empate/derrota* (xadrez, tênis de mesa).
+   - **Súmula completa** (gols, faltas, cartões, cronômetro) só para futsal; nas outras o lançamento é o ⚡ resultado.
+   - Formato (pontos corridos, grupos + mata-mata, só mata-mata), 3º lugar, pontos por V/E/D e **quais turmas jogam**.
+3. Cada modalidade abre como um campeonato: **tabela** gerada, manual ou colada, **classificação** (no vôlei com
+   SV/SP = sets vencidos/perdidos, SS = saldo de sets, PS = saldo de pontos), mata-mata com “Vencedor do jogo X”.
+4. **Pódio** (aba 🏅 Pódio da modalidade): quando todos os jogos terminam, o app calcula (final + 3º lugar; sem
+   disputa de 3º, os **dois** semifinalistas levam bronze; nos pontos corridos, 1º/2º/3º). O admin **confirma** — ou
+   ajusta na mão (W.O., decisão da organização).
+5. **Quadro de medalhas** (aba 🏅 Medalhas): só conta pódio confirmado. Critério em Config.: **ordem olímpica**
+   (ouros > pratas > bronzes) ou **por pontos** (padrão 3-2-1, editável). Mostra quantas modalidades já têm pódio.
+6. **Jogos de hoje**: todos os jogos do dia, de todas as modalidades, em ordem de horário.
+7. **Página da turma**: medalhas, modalidades e todos os jogos dela.
+8. **Imprimir/PDF**: quadro de medalhas (aba Medalhas → 🖨️), e tabela e classificação de cada modalidade.
+
+Para testar: 💾 → **Adicionar interclasse de exemplo** (futsal, vôlei por sets, basquete e xadrez).
+
+---
+
 ## Colar elenco em texto
 
 Na página do time (só admins): **📋 Colar elenco em texto**. Um jogador por linha:
@@ -230,13 +258,15 @@ js/
   tabela.js             → geração da tabela (todos contra todos, grupos, chave)
                           + tabela manual: salvar, mover, excluir e ler texto
   regras.js             → o "cérebro": placar, vencedor, classificação,
-                          desempate, suspensões, estatísticas
+                          desempate, suspensões, estatísticas, pódio e medalhas
+  interclasse.js        → interclasse: turmas, modalidades, participantes, pódio
   exemplo.js            → campeonato fictício para testes
   app.js                → navegação entre telas (rotas pelo #/endereço)
   telas/
     inicio.js           → lista de campeonatos
     campeonato.js       → abas Jogos, Classificação, Times, Estatísticas, Suspensos, Config.
-    jogos.js            → adicionar/editar/organizar jogos e colar tabela em texto
+    jogos.js            → adicionar/editar/organizar jogos, colar tabela, resultado (gols/sets/V-E-D)
+    interclasse.js      → telas do interclasse: medalhas, modalidades, hoje, turmas, pódio
     time.js             → página do time e do jogador (e seus formulários)
     sumula.js           → súmula ao vivo
     relatorios.js       → páginas para imprimir/PDF
