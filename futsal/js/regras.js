@@ -51,6 +51,11 @@ App.regras = {
   /** Placar do jogo { casa, fora } contando gols e gols contra (ou o resultado rápido). */
   placar(jogo) {
     if (jogo.placarRapido) return { casa: Number(jogo.placarRapido.casa) || 0, fora: Number(jogo.placarRapido.fora) || 0 };
+    // Súmulas por esporte do interclasse (vôlei, basquete...) guardam o próprio placar.
+    // (A súmula de futsal não tem "esporte": segue o cálculo pelos eventos, abaixo.)
+    if (jogo.sumula && jogo.sumula.esporte && jogo.sumula.placar) {
+      return { casa: Number(jogo.sumula.placar.casa) || 0, fora: Number(jogo.sumula.placar.fora) || 0 };
+    }
     const p = { casa: 0, fora: 0 };
     if (!jogo.sumula) return p;
     for (const ev of jogo.sumula.eventos) {
@@ -274,7 +279,7 @@ App.regras = {
       lista.forEach((l) => { l.pp = 0; l.pc = 0; });
       for (const j of jogos) {
         // sets = [{ casa: 25, fora: 20 }, ...]
-        const sets = (j.placarRapido && j.placarRapido.sets) || [];
+        const sets = (j.placarRapido && j.placarRapido.sets) || (j.sumula && j.sumula.esporte && j.sumula.placar && j.sumula.placar.sets) || [];
         for (const { casa: a, fora: b } of sets) {
           if (linhas[j.casaId]) { linhas[j.casaId].pp += a; linhas[j.casaId].pc += b; }
           if (linhas[j.foraId]) { linhas[j.foraId].pp += b; linhas[j.foraId].pc += a; }

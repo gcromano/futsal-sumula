@@ -19,7 +19,7 @@
      Mude a VERSAO só se mudar a lista ARQUIVOS abaixo.
    ========================================================= */
 
-const VERSAO = 'futsal-v7';
+const VERSAO = 'futsal-v8';
 const TEMPO_LIMITE_REDE = 4000; // ms: depois disso usa o cache (internet fraca na quadra)
 
 const ARQUIVOS = [
@@ -47,6 +47,7 @@ const ARQUIVOS = [
   './js/telas/jogos.js',
   './js/telas/time.js',
   './js/telas/sumula.js',
+  './js/telas/sumula-esportes.js',
   './js/telas/relatorios.js',
   './js/telas/backup.js',
   './js/telas/interclasse.js',

@@ -166,33 +166,84 @@ App.dados = {
     resultado: 'Vitória / empate / derrota (sem placar)',
   },
 
-  /** Sugestões de modalidades (nome, emoji e tipo de placar). */
+  /**
+   * ESPORTES do interclasse. O esporte define o tipo de placar, a súmula
+   * e as regras padrão (oficiais). Tudo que muda em jogo de escola pode
+   * ser alterado na aba Config. da modalidade.
+   */
+  ESPORTES: {
+    futsal: {
+      nome: 'Futsal', emoji: '⚽', tipoPlacar: 'gols',
+      regras: { duracaoPeriodo: 20, numPeriodos: 2, limiteFaltas: 5, limiteAmarelos: 3 },
+    },
+    volei: {
+      nome: 'Vôlei', emoji: '🏐', tipoPlacar: 'sets',
+      regras: { melhorDe: 3, pontosSet: 25, pontosSetDecisivo: 15, rodizio: false, libero: false, limiteSubstituicoes: 6, temposPorSet: 2 },
+    },
+    basquete: {
+      nome: 'Basquete', emoji: '🏀', tipoPlacar: 'gols', permiteEmpate: false,
+      regras: { duracaoPeriodo: 10, numPeriodos: 4, prorrogacao: 5, faltasDesqualifica: 5, bonusEquipe: 5, temposPrimeiraMetade: 2, temposSegundaMetade: 3, temposProrrogacao: 1 },
+    },
+    handebol: {
+      nome: 'Handebol', emoji: '🤾', tipoPlacar: 'gols',
+      regras: { duracaoPeriodo: 30, numPeriodos: 2, exclusaoMinutos: 2, exclusoesDesqualifica: 3, temposJogo: 3, temposPorTempo: 2 },
+    },
+    tenisdemesa: {
+      nome: 'Tênis de mesa', emoji: '🏓', tipoPlacar: 'sets',
+      regras: { melhorDe: 3, pontosSet: 11, pontosSetDecisivo: 11, duplas: false },
+    },
+    xadrez: {
+      nome: 'Xadrez', emoji: '♟️', tipoPlacar: 'resultado',
+      regras: {},
+    },
+    outro: {
+      nome: 'Outro', emoji: '🏅', tipoPlacar: 'gols',
+      regras: { usaCronometro: false, duracaoPeriodo: 20, numPeriodos: 2 },
+    },
+  },
+
+  /** Sugestões para o formulário de nova modalidade. */
   MODALIDADES_SUGERIDAS: [
-    { nome: 'Futsal', emoji: '⚽', tipoPlacar: 'gols', sumulaCompleta: true },
-    { nome: 'Vôlei', emoji: '🏐', tipoPlacar: 'sets' },
-    { nome: 'Basquete', emoji: '🏀', tipoPlacar: 'gols', permiteEmpate: false },
-    { nome: 'Handebol', emoji: '🤾', tipoPlacar: 'gols' },
-    { nome: 'Xadrez', emoji: '♟️', tipoPlacar: 'resultado' },
-    { nome: 'Tênis de mesa', emoji: '🏓', tipoPlacar: 'resultado', permiteEmpate: false },
-    { nome: 'Queimada', emoji: '🔴', tipoPlacar: 'resultado' },
+    { nome: 'Futsal', emoji: '⚽', esporte: 'futsal' },
+    { nome: 'Vôlei', emoji: '🏐', esporte: 'volei' },
+    { nome: 'Basquete', emoji: '🏀', esporte: 'basquete' },
+    { nome: 'Handebol', emoji: '🤾', esporte: 'handebol' },
+    { nome: 'Tênis de mesa', emoji: '🏓', esporte: 'tenisdemesa' },
+    { nome: 'Xadrez', emoji: '♟️', esporte: 'xadrez' },
+    { nome: 'Queimada', emoji: '🔴', esporte: 'outro' },
   ],
 
   /**
+   * Esporte de uma modalidade. Modalidades criadas antes de existir o
+   * campo "esporte" têm o esporte deduzido do tipo de placar.
+   */
+  esporteDe(cat) {
+    const c = (cat && cat.config) || {};
+    if (c.esporte && this.ESPORTES[c.esporte]) return c.esporte;
+    if (c.tipoPlacar === 'sets') return 'volei';
+    if (c.tipoPlacar === 'resultado') return 'xadrez';
+    return c.sumulaCompleta ? 'futsal' : 'outro';
+  },
+
+  /**
    * Configuração de uma modalidade do interclasse.
-   * Parte da configuração de campeonato (configPadrao) + os campos novos.
+   * Parte da configuração de campeonato (configPadrao) + as regras do esporte.
    */
   configModalidade(dados = {}) {
-    const tipo = dados.tipoPlacar || 'gols';
-    const cfg = Object.assign(this.configPadrao(''), {
+    const esporte = this.ESPORTES[dados.esporte] ? dados.esporte : ({ sets: 'volei', resultado: 'xadrez' }[dados.tipoPlacar] || (dados.sumulaCompleta ? 'futsal' : 'outro'));
+    const E = this.ESPORTES[esporte];
+    const tipo = E.tipoPlacar;
+    const cfg = Object.assign(this.configPadrao(''), E.regras, {
+      esporte,
       tipoPlacar: tipo,                                  // 'gols' | 'sets' | 'resultado'
-      permiteEmpate: tipo === 'sets' ? false : dados.permiteEmpate !== false,
-      melhorDe: dados.melhorDe === 5 ? 5 : 3,            // sets: melhor de 3 ou de 5
-      sumulaCompleta: tipo === 'gols' && !!dados.sumulaCompleta, // súmula com gols/cartões (futsal)
+      permiteEmpate: tipo === 'sets' ? false : (E.permiteEmpate === false ? false : dados.permiteEmpate !== false),
+      sumulaCompleta: esporte === 'futsal',              // súmula atual de futsal (gols, cartões, suspensões)
       anoMinimo: null,
     });
+    if (dados.melhorDe) cfg.melhorDe = dados.melhorDe === 5 ? 5 : 3;
     if (tipo === 'sets') cfg.desempate = ['pontos', 'vitorias', 'saldo', 'saldoPontos', 'confronto', 'sorteio'];
     if (tipo === 'resultado') cfg.desempate = ['pontos', 'vitorias', 'confronto', 'sorteio'];
-    if (tipo !== 'gols' || !cfg.sumulaCompleta) cfg.desempate = cfg.desempate.filter((c) => c !== 'cartoes');
+    if (!cfg.sumulaCompleta) cfg.desempate = cfg.desempate.filter((c) => c !== 'cartoes');
     return cfg;
   },
 

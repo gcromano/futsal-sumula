@@ -36,9 +36,10 @@ App.telas.interclasse = {
   placarEspecial(j) {
     const D = App.dados;
     const { camp, cat } = D.categoria(j.categoriaId);
-    if (!D.ehInterclasse(camp) || !j.placarRapido) return null;
+    // resultado rápido OU placar da súmula do esporte (vôlei, xadrez...)
+    const r = j.placarRapido || (j.sumula && j.sumula.esporte && j.status !== 'agendado' ? j.sumula.placar : null);
+    if (!D.ehInterclasse(camp) || !r) return null;
     const tipo = App.regras.tipoPlacar(cat);
-    const r = j.placarRapido;
     if (tipo === 'sets') {
       return `${r.casa} × ${r.fora}<small>${(r.sets || []).map((s) => `${s.casa}-${s.fora}`).join(' · ')}</small>`;
     }
@@ -151,31 +152,82 @@ App.telas.interclasse = {
     document.getElementById('fab-modalidade').onclick = () => this.formModalidade(camp);
   },
 
-  /** Nova modalidade: nome, emoji, tipo de placar, formato, pontos e turmas. */
+  /**
+   * Campos de regras de cada esporte (aba Config. da modalidade).
+   * [chave, rótulo, tipo ('num' | 'check' | lista de opções [valor, texto])]
+   */
+  CAMPOS_REGRAS: {
+    futsal: [['duracaoPeriodo', 'Minutos por tempo', 'num'], ['numPeriodos', 'Nº de tempos', 'num'], ['limiteFaltas', 'Faltas para tiro livre sem barreira', 'num'], ['limiteAmarelos', 'Amarelos para suspensão', 'num']],
+    volei: [['melhorDe', 'Sets', [[3, 'Melhor de 3'], [5, 'Melhor de 5']]], ['pontosSet', 'Pontos por set', 'num'], ['pontosSetDecisivo', 'Pontos do set decisivo', 'num'],
+      ['limiteSubstituicoes', 'Substituições por set', 'num'], ['temposPorSet', 'Tempos por set', 'num'], ['rodizio', 'Controlar rodízio (escalação I–VI e rotação)', 'check'], ['libero', 'Usar líbero', 'check']],
+    basquete: [['numPeriodos', 'Divisão', [[4, '4 quartos'], [2, '2 tempos']]], ['duracaoPeriodo', 'Minutos por período', 'num'], ['prorrogacao', 'Minutos de prorrogação', 'num'],
+      ['faltasDesqualifica', 'Faltas para desqualificar', 'num'], ['bonusEquipe', 'Faltas de equipe para bônus', 'num'], ['temposPrimeiraMetade', 'Tempos no 1º tempo', 'num'],
+      ['temposSegundaMetade', 'Tempos no 2º tempo', 'num'], ['temposProrrogacao', 'Tempos por prorrogação', 'num']],
+    handebol: [['duracaoPeriodo', 'Minutos por tempo', 'num'], ['numPeriodos', 'Nº de tempos', 'num'], ['exclusaoMinutos', 'Minutos de exclusão', 'num'],
+      ['exclusoesDesqualifica', 'Exclusões para desqualificar', 'num'], ['temposJogo', 'Tempos de equipe por jogo', 'num'], ['temposPorTempo', 'Máximo de tempos por tempo', 'num']],
+    tenisdemesa: [['melhorDe', 'Sets', [[3, 'Melhor de 3'], [5, 'Melhor de 5']]], ['pontosSet', 'Pontos por set', 'num'], ['duplas', 'Duplas', 'check']],
+    xadrez: [],
+    outro: [['usaCronometro', 'Usar cronômetro', 'check'], ['duracaoPeriodo', 'Minutos por tempo', 'num'], ['numPeriodos', 'Nº de tempos', 'num']],
+  },
+
+  /** Esportes em que pode haver empate (o admin escolhe). */
+  ESPORTES_COM_EMPATE: ['futsal', 'handebol', 'xadrez', 'outro'],
+
+  /** HTML dos campos de regras do esporte. */
+  htmlRegras(esporte, c) {
+    const U = App.util;
+    const campos = this.CAMPOS_REGRAS[esporte] || [];
+    if (!campos.length) return '<p class="suave">Este esporte não tem regras de tempo ou pontos para configurar.</p>';
+    const checks = campos.filter(([, , t]) => t === 'check');
+    const outros = campos.filter(([, , t]) => t !== 'check');
+    return `<div class="campos-2">${outros.map(([k, r, t]) => (Array.isArray(t)
+      ? `<label class="campo"><span>${r}</span><select name="r-${k}">${t.map(([v, txt]) => `<option value="${v}" ${String(c[k]) === String(v) ? 'selected' : ''}>${U.esc(txt)}</option>`).join('')}</select></label>`
+      : `<label class="campo"><span>${r}</span><input type="number" min="0" name="r-${k}" value="${U.esc(c[k] ?? '')}"></label>`)).join('')}</div>
+      ${checks.map(([k, r]) => `<label class="check"><input type="checkbox" name="r-${k}" ${c[k] ? 'checked' : ''}> ${r}</label>`).join('')}`;
+  },
+
+  /** Lê os campos de regras do formulário para a configuração. */
+  lerRegras(esporte, d, c) {
+    (this.CAMPOS_REGRAS[esporte] || []).forEach(([k, , t]) => {
+      const v = d['r-' + k];
+      if (t === 'check') c[k] = !!v;
+      else if (v !== undefined && v !== null && v !== '' && !isNaN(Number(v))) c[k] = Number(v);
+    });
+    // tênis de mesa: o set decisivo tem os mesmos pontos dos outros
+    if (esporte === 'tenisdemesa') c.pontosSetDecisivo = c.pontosSet;
+  },
+
+  /** Nova modalidade: esporte (define placar, súmula e regras), formato, pontos e turmas. */
   formModalidade(camp) {
     const D = App.dados;
     const U = App.util;
     if (!(camp.turmas || []).length) { U.toast('Cadastre as turmas primeiro (aba Turmas).', 'aviso', 4000); App.ir(`#/inter/${camp.id}/turmas`); return; }
     const opt = (v, t, sel) => `<option value="${v}" ${String(v) === String(sel) ? 'selected' : ''}>${U.esc(t)}</option>`;
+    const DESC = {
+      futsal: 'Súmula de futsal completa (gols, faltas acumuladas, cartões, suspensões).',
+      volei: 'Sets (25 / decisivo 15, 2 de diferença), saque, rodízio opcional, substituições, tempos, sanções e líbero.',
+      basquete: 'Quartos, prorrogação, +1/+2/+3 por jogador, faltas pessoais e de equipe (bônus), tempos e posse alternada. Não termina empatado.',
+      handebol: '2 tempos, gols, tiros de 7 m, advertência, exclusão de 2 min com cronômetro e desqualificação.',
+      tenisdemesa: 'Sets até 11 (2 de diferença), troca de saque a cada 2 pontos, duplas opcional.',
+      xadrez: 'Brancas/pretas, resultado, motivo e relógio.',
+      outro: 'Placar simples e eventos livres (texto).',
+    };
     U.modal({
       titulo: 'Nova modalidade',
       html: `
         <form id="form-mod">
-          <label class="campo"><span>Sugestões</span>
-            <select id="sugestao"><option value="">— escolher (opcional) —</option>
-              ${D.MODALIDADES_SUGERIDAS.map((m, i) => `<option value="${i}">${m.emoji} ${U.esc(m.nome)}</option>`).join('')}</select></label>
+          <label class="campo"><span>Esporte</span>
+            <select name="esporte">${Object.entries(D.ESPORTES).map(([k, e]) => opt(k, `${e.emoji} ${e.nome}`, 'futsal')).join('')}</select></label>
+          <p class="suave" id="m-desc" style="margin-top:-6px"></p>
           <div class="campos-2" style="grid-template-columns:90px 1fr">
-            <label class="campo"><span>Emoji</span><input name="emoji" value="🏅" maxlength="4" style="font-size:1.4rem;text-align:center"></label>
-            <label class="campo"><span>Nome *</span><input name="nome" placeholder="Ex.: Vôlei Feminino"></label>
+            <label class="campo"><span>Emoji</span><input name="emoji" value="⚽" maxlength="4" style="font-size:1.4rem;text-align:center"></label>
+            <label class="campo"><span>Nome *</span><input name="nome" value="Futsal" placeholder="Ex.: Vôlei Feminino"></label>
           </div>
-          <label class="campo"><span>Tipo de placar</span>
-            <select name="tipoPlacar">${Object.entries(D.TIPOS_PLACAR).map(([k, v]) => opt(k, v, 'gols')).join('')}</select></label>
-          <label class="check" id="c-empate"><input type="checkbox" name="permiteEmpate" checked> Permite empate (desmarque no basquete)</label>
-          <label class="check" id="c-sumula"><input type="checkbox" name="sumulaCompleta"> Súmula completa de futsal (gols, faltas, cartões, cronômetro)</label>
+          <label class="check" id="c-empate"><input type="checkbox" name="permiteEmpate" checked> Permite empate</label>
           <label class="campo oculto" id="c-sets"><span>Sets</span>
             <select name="melhorDe">${opt(3, 'Melhor de 3', 3)}${opt(5, 'Melhor de 5', 3)}</select></label>
           <label class="campo"><span>Formato</span>
-            <select name="formato" id="m-formato">${Object.entries(D.NOMES_FORMATO).map(([k, v]) => opt(k, v, 'mata')).join('')}</select></label>
+            <select name="formato">${Object.entries(D.NOMES_FORMATO).map(([k, v]) => opt(k, v, 'mata')).join('')}</select></label>
           <div class="campos-2" id="c-grupos">
             <label class="campo"><span>Nº de grupos</span><input type="number" name="numGrupos" min="1" max="8" value="2"></label>
             <label class="campo"><span>Classificados por grupo</span><input type="number" name="classificadosPorGrupo" min="1" max="8" value="2"></label>
@@ -191,29 +243,29 @@ App.telas.interclasse = {
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:4px">
             ${camp.turmas.map((t) => `<label class="check" style="margin:0"><input type="checkbox" name="t-${t.id}" checked> ${U.esc(t.nome)}</label>`).join('')}
           </div>
+          <p class="suave">Tempo de jogo, pontos do set, limites de faltas e tempos: ajuste depois na aba Config. da modalidade.</p>
         </form>`,
       aoAbrir: () => {
         const f = document.getElementById('form-mod');
+        let nomeAnterior = 'Futsal';
         const atualizar = () => {
-          const tipo = f.tipoPlacar.value;
-          document.getElementById('c-sets').classList.toggle('oculto', tipo !== 'sets');
-          document.getElementById('c-sumula').classList.toggle('oculto', tipo !== 'gols');
-          document.getElementById('c-empate').classList.toggle('oculto', tipo === 'sets');
+          const esp = f.esporte.value;
+          document.getElementById('m-desc').textContent = DESC[esp];
+          document.getElementById('c-sets').classList.toggle('oculto', D.ESPORTES[esp].tipoPlacar !== 'sets');
+          document.getElementById('c-empate').classList.toggle('oculto', !this.ESPORTES_COM_EMPATE.includes(esp));
           document.getElementById('c-grupos').classList.toggle('oculto', f.formato.value !== 'grupos');
           document.getElementById('c-terceiro').classList.toggle('oculto', f.formato.value === 'pontos');
           document.getElementById('c-ida').classList.toggle('oculto', f.formato.value === 'mata');
         };
-        f.onchange = atualizar;
-        document.getElementById('sugestao').onchange = (e) => {
-          const m = D.MODALIDADES_SUGERIDAS[e.target.value];
-          if (!m) return;
-          f.nome.value = m.nome;
-          f.emoji.value = m.emoji;
-          f.tipoPlacar.value = m.tipoPlacar;
-          f.permiteEmpate.checked = m.permiteEmpate !== false;
-          f.sumulaCompleta.checked = !!m.sumulaCompleta;
+        f.esporte.onchange = () => {
+          const E = D.ESPORTES[f.esporte.value];
+          if (!f.nome.value.trim() || f.nome.value === nomeAnterior) f.nome.value = f.esporte.value === 'outro' ? '' : E.nome;
+          nomeAnterior = f.nome.value;
+          f.emoji.value = E.emoji;
+          f.melhorDe.value = String((E.regras && E.regras.melhorDe) || 3);
           atualizar();
         };
+        f.formato.onchange = atualizar;
         document.getElementById('m-todas').onclick = () => {
           const caixas = [...f.querySelectorAll('input[name^="t-"]')];
           const marcar = caixas.some((c) => !c.checked);
@@ -231,10 +283,12 @@ App.telas.interclasse = {
             const turmaIds = camp.turmas.filter((t) => d['t-' + t.id]).map((t) => t.id);
             if (turmaIds.length < 2) { U.toast('Escolha pelo menos 2 turmas.', 'erro'); return false; }
             const cat = App.inter.adicionarModalidade(camp, {
-              nome: d.nome, emoji: d.emoji, tipoPlacar: d.tipoPlacar, permiteEmpate: d.permiteEmpate,
-              sumulaCompleta: d.sumulaCompleta, melhorDe: Number(d.melhorDe), formato: d.formato,
-              numGrupos: d.numGrupos, classificadosPorGrupo: d.classificadosPorGrupo, terceiroLugar: d.terceiroLugar,
-              idaEVolta: d.idaEVolta, pontosVitoria: d.pontosVitoria, pontosEmpate: d.pontosEmpate, pontosDerrota: d.pontosDerrota,
+              nome: d.nome, emoji: d.emoji, esporte: d.esporte,
+              permiteEmpate: this.ESPORTES_COM_EMPATE.includes(d.esporte) ? d.permiteEmpate : false,
+              melhorDe: D.ESPORTES[d.esporte].tipoPlacar === 'sets' ? Number(d.melhorDe) : undefined,
+              formato: d.formato, numGrupos: d.numGrupos, classificadosPorGrupo: d.classificadosPorGrupo,
+              terceiroLugar: d.terceiroLugar, idaEVolta: d.idaEVolta,
+              pontosVitoria: d.pontosVitoria, pontosEmpate: d.pontosEmpate, pontosDerrota: d.pontosDerrota,
               turmaIds,
             });
             U.toast('Modalidade criada! Agora monte a tabela de jogos.', 'ok', 3500);
@@ -510,8 +564,8 @@ App.telas.interclasse = {
     const times = D.timesDaCategoria(cat.id);
     area.innerHTML = `
       <div class="cartao"><h2>Turmas nesta modalidade (${times.length})</h2>
-        <ul class="lista">${times.map((t) => `<li><a class="item" href="#/time/${t.id}">${U.escudo(t)} <span class="cresce"><b>${U.esc(t.nome)}</b>${cat.config.sumulaCompleta ? `<br><span class="suave">${t.jogadores.length} jogador(es) no elenco</span>` : ''}</span><span class="suave">›</span></a></li>`).join('') || '<li class="vazio">Nenhuma.</li>'}</ul>
-        ${cat.config.sumulaCompleta ? '<p class="suave">Na súmula de futsal, os gols e cartões vão para os jogadores: toque na turma para cadastrar o elenco.</p>' : ''}
+        <ul class="lista">${times.map((t) => `<li><a class="item" href="#/turma/${camp.id}/${t.turmaId}">${U.escudo(t)} <span class="cresce"><b>${U.esc(t.nome)}</b><br><span class="suave">${(t.jogadores || []).length} jogador(es) no elenco</span></span><span class="suave">›</span></a></li>`).join('') || '<li class="vazio">Nenhuma.</li>'}</ul>
+        <p class="suave">O elenco é o mesmo da turma em todas as modalidades: toque na turma para cadastrar ou colar os jogadores.</p>
       </div>
       ${pode ? `<form id="form-part" class="cartao so-admin"><h2>Escolher turmas</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:4px">
@@ -535,6 +589,7 @@ App.telas.interclasse = {
     const D = App.dados;
     const c = cat.config;
     const tipo = App.regras.tipoPlacar(cat);
+    const esporte = D.esporteDe(cat);
     const opt = (v, t, sel) => `<option value="${v}" ${String(v) === String(sel) ? 'selected' : ''}>${U.esc(t)}</option>`;
     let ordem = c.desempate.slice();
     const possiveis = ['pontos', 'vitorias', ...(tipo === 'resultado' ? [] : ['saldo', 'golsPro']), ...(tipo === 'sets' ? ['saldoPontos'] : []), 'confronto', ...(c.sumulaCompleta ? ['cartoes'] : []), 'sorteio'];
@@ -551,10 +606,12 @@ App.telas.interclasse = {
             <label class="campo"><span>Emoji</span><input name="emoji" value="${U.esc(cat.emoji || '🏅')}" maxlength="4" style="font-size:1.4rem;text-align:center"></label>
             <label class="campo"><span>Nome</span><input name="nome" value="${U.esc(cat.nome)}"></label>
           </div>
-          <p><b>Tipo de placar:</b> ${U.esc(D.TIPOS_PLACAR[tipo])}</p>
-          ${tipo !== 'sets' ? `<label class="check"><input type="checkbox" name="permiteEmpate" ${c.permiteEmpate !== false ? 'checked' : ''}> Permite empate</label>` : ''}
-          ${tipo === 'sets' ? `<label class="campo"><span>Sets</span><select name="melhorDe">${opt(3, 'Melhor de 3', c.melhorDe)}${opt(5, 'Melhor de 5', c.melhorDe)}</select></label>` : ''}
-          ${tipo === 'gols' ? `<label class="check"><input type="checkbox" name="sumulaCompleta" ${c.sumulaCompleta ? 'checked' : ''}> Súmula completa de futsal (gols, faltas, cartões, cronômetro)</label>` : ''}
+          <p><b>Esporte:</b> ${U.esc(D.ESPORTES[esporte].emoji)} ${U.esc(D.ESPORTES[esporte].nome)} · ${U.esc(D.TIPOS_PLACAR[tipo])}</p>
+          ${this.ESPORTES_COM_EMPATE.includes(esporte) ? `<label class="check"><input type="checkbox" name="permiteEmpate" ${c.permiteEmpate !== false ? 'checked' : ''}> Permite empate</label>` : ''}
+        </div>
+        <div class="cartao"><h2>Regras do jogo</h2>
+          <p class="suave">Padrão = regra oficial. Ajuste para os jogos da escola.</p>
+          ${this.htmlRegras(esporte, c)}
         </div>
         <div class="cartao"><h2>Formato</h2>
           <label class="campo"><span>Formato</span><select name="formato" id="cm-formato">${Object.entries(D.NOMES_FORMATO).map(([k, v]) => opt(k, v, c.formato)).join('')}</select></label>
@@ -566,11 +623,6 @@ App.telas.interclasse = {
           <label class="check"><input type="checkbox" name="terceiroLugar" ${c.terceiroLugar ? 'checked' : ''}> Disputa de 3º lugar</label>
           ${temJogos ? '<p class="suave">Mudou o formato? Depois de salvar, use “Gerar automaticamente” na aba Jogos.</p>' : ''}
         </div>
-        ${c.sumulaCompleta ? `<div class="cartao"><h2>Tempo de jogo e disciplina</h2><div class="campos-2">
-          <label class="campo"><span>Minutos por período</span><input type="number" min="1" name="duracaoPeriodo" value="${c.duracaoPeriodo}"></label>
-          <label class="campo"><span>Nº de períodos</span><input type="number" min="1" max="4" name="numPeriodos" value="${c.numPeriodos}"></label>
-          <label class="campo"><span>Amarelos para suspensão</span><input type="number" min="1" name="limiteAmarelos" value="${c.limiteAmarelos}"></label>
-          <label class="campo"><span>Limite de faltas</span><input type="number" min="1" name="limiteFaltas" value="${c.limiteFaltas}"></label></div></div>` : ''}
         <div class="cartao"><h2>Pontuação</h2><div class="campos-3">
           <label class="campo"><span>Vitória</span><input type="number" name="pontosVitoria" value="${c.pontosVitoria}"></label>
           <label class="campo"><span>Empate</span><input type="number" name="pontosEmpate" value="${c.pontosEmpate}"></label>
@@ -610,14 +662,14 @@ App.telas.interclasse = {
       const d = U.lerForm(f);
       cat.nome = d.nome || cat.nome;
       cat.emoji = d.emoji || cat.emoji;
-      ['numGrupos', 'classificadosPorGrupo', 'duracaoPeriodo', 'numPeriodos', 'limiteAmarelos', 'limiteFaltas', 'pontosVitoria', 'pontosEmpate', 'pontosDerrota']
+      ['numGrupos', 'classificadosPorGrupo', 'pontosVitoria', 'pontosEmpate', 'pontosDerrota']
         .forEach((k) => { if (d[k] !== undefined && d[k] !== null && !isNaN(d[k])) c[k] = d[k]; });
       c.formato = d.formato;
       c.idaEVolta = d.idaEVolta;
       c.terceiroLugar = d.terceiroLugar;
       if ('permiteEmpate' in d) c.permiteEmpate = d.permiteEmpate;
-      if ('melhorDe' in d) c.melhorDe = Number(d.melhorDe) === 5 ? 5 : 3;
-      if ('sumulaCompleta' in d) c.sumulaCompleta = d.sumulaCompleta;
+      this.lerRegras(esporte, d, c);
+      if (c.esporte !== esporte) c.esporte = esporte; // modalidades antigas: grava o esporte deduzido
       c.desempate = ordem.filter((k) => ativos.has(k));
       if (!c.desempate.length) c.desempate = ['pontos'];
       D.salvar();
@@ -646,11 +698,20 @@ App.telas.interclasse = {
     const jogos = App.inter.jogosDaTurma(camp, turma.id).sort(D.compararJogos);
     const modalidades = camp.categorias.filter((c) => (c.turmaIds || []).includes(turma.id));
     const ICONE = { ouro: '🥇', prata: '🥈', bronze: '🥉' };
+    const elenco = App.inter.jogadoresDaTurma(camp, turma.id);
     App.main().innerHTML = `
       <div class="cartao"><div class="linha">${this.bolinhaTurma(turma)}<h2 style="margin:0">${U.esc(turma.nome)}</h2></div>
         <p style="font-size:1.3rem;margin:10px 0 0">🥇 ${linha.o} &nbsp; 🥈 ${linha.p} &nbsp; 🥉 ${linha.b}</p>
         ${linha.modalidades.length ? `<ul class="lista">${linha.modalidades.map((m) => `<li>${ICONE[m.medalha]} <a href="#/camp/${camp.id}/${m.cat.id}/podio">${U.esc(m.cat.emoji || '')} ${U.esc(m.cat.nome)}</a></li>`).join('')}</ul>` : '<p class="suave">Ainda sem medalhas.</p>'}
         <p class="suave">Participa de: ${modalidades.map((c) => `<a href="#/camp/${camp.id}/${c.id}/jogos">${U.esc(c.emoji || '')} ${U.esc(c.nome)}</a>`).join(' · ') || 'nenhuma modalidade ainda'}</p>
+      </div>
+      <div class="cartao">
+        <div class="linha-entre"><h2>👥 Elenco (${elenco.length})</h2>
+          <span class="so-admin linha"><button class="btn btn-pequeno" id="el-add">+ Jogador</button><button class="btn btn-pequeno" id="el-colar">📋 Colar</button></span></div>
+        ${elenco.length ? `<ul class="lista">${elenco.map((p) => `<li><span class="camisa">${U.esc(p.numero)}</span>
+          <span class="cresce"><b>${U.esc(p.nome)}</b>${p.posicao === 'goleiro' ? ' <span class="etiqueta azul">GOL</span>' : ''}</span>
+          <button class="btn btn-pequeno btn-icone so-admin" data-el-editar="${p.id}" aria-label="Editar">✏️</button></li>`).join('')}</ul>`
+          : '<p class="vazio">Sem jogadores. O mesmo elenco vale para todas as modalidades (súmulas de futsal, vôlei, basquete...).</p>'}
       </div>
       <div class="cartao"><h2>Jogos (${jogos.length})</h2>
         ${jogos.length ? jogos.map((j) => {
@@ -659,5 +720,88 @@ App.telas.interclasse = {
         }).join('') : '<p class="vazio">Sem jogos ainda.</p>'}
       </div>`;
     App.telas.campeonato.ligarCartoes(App.main());
+    document.getElementById('el-add').onclick = () => this.formJogadorTurma(camp, turma);
+    document.getElementById('el-colar').onclick = () => this.colarElencoTurma(camp, turma);
+    App.main().querySelectorAll('[data-el-editar]').forEach((b) => {
+      b.onclick = () => this.formJogadorTurma(camp, turma, elenco.find((p) => p.id === b.dataset.elEditar));
+    });
+  },
+
+  /** Adicionar/editar um jogador do elenco da turma. */
+  formJogadorTurma(camp, turma, jogador) {
+    const U = App.util;
+    const elenco = App.inter.jogadoresDaTurma(camp, turma.id);
+    U.modal({
+      titulo: jogador ? 'Editar jogador' : `Novo jogador · ${turma.nome}`,
+      html: `<form id="el-form"><div class="campos-2">
+        <label class="campo"><span>Número *</span><input type="number" name="numero" min="0" max="99" inputmode="numeric" value="${U.esc(jogador ? jogador.numero : '')}"></label>
+        <label class="campo"><span>Posição</span><select name="posicao"><option value="linha">Linha</option><option value="goleiro" ${jogador && jogador.posicao === 'goleiro' ? 'selected' : ''}>Goleiro</option></select></label></div>
+        <label class="campo"><span>Nome *</span><input name="nome" value="${U.esc(jogador ? jogador.nome : '')}"></label></form>`,
+      aoAbrir: () => document.querySelector('#el-form [name=numero]').focus(),
+      botoes: [
+        ...(jogador ? [{
+          texto: '🗑️ Remover', classe: 'btn-perigo',
+          acao: () => {
+            setTimeout(async () => {
+              if (!(await U.confirmar(`Remover ${jogador.nome} do elenco? Nos lances antigos aparece como “jogador removido”.`, 'Remover', 'btn-perigo'))) return;
+              App.inter.salvarElenco(camp, turma.id, elenco.filter((p) => p.id !== jogador.id));
+              App.render();
+            }, 0);
+          },
+        }] : []),
+        { texto: 'Cancelar' },
+        {
+          texto: 'Salvar', classe: 'btn-primario',
+          acao: () => {
+            const d = U.lerForm(document.getElementById('el-form'));
+            if (d.numero === null || !d.nome) { U.toast('Preencha número e nome.', 'erro'); return false; }
+            const repetido = elenco.find((p) => Number(p.numero) === d.numero && p !== jogador);
+            if (repetido) { U.toast(`O número ${d.numero} já é de ${repetido.nome}.`, 'erro'); return false; }
+            const lista = jogador
+              ? elenco.map((p) => (p === jogador ? Object.assign({}, p, { numero: d.numero, nome: d.nome, posicao: d.posicao }) : p))
+              : [...elenco, { id: U.id(), numero: d.numero, nome: d.nome, posicao: d.posicao }];
+            App.inter.salvarElenco(camp, turma.id, lista);
+            App.render();
+          },
+        },
+      ],
+    });
+  },
+
+  /** Colar o elenco da turma em texto (mesma leitura e conferência do cadastro de times). */
+  colarElencoTurma(camp, turma) {
+    const U = App.util;
+    const elenco = App.inter.jogadoresDaTurma(camp, turma.id);
+    U.modal({
+      titulo: `📋 Colar elenco · ${turma.nome}`,
+      html: `<p class="suave" style="margin-top:0">Um jogador por linha: <code>número - nome</code> (ex.: <code>10 - João Silva</code>). Pode acrescentar <code>- goleiro</code>.</p>
+        <textarea id="el-txt" rows="10" placeholder="1 - Pedro Souza - goleiro&#10;7 - Lucas Lima&#10;10 - João Silva"></textarea>`,
+      aoAbrir: () => document.getElementById('el-txt').focus(),
+      botoes: [
+        { texto: 'Cancelar' },
+        {
+          texto: 'Conferir →', classe: 'btn-primario',
+          acao: () => {
+            const { novos, problemas } = App.telas.time.lerElenco(document.getElementById('el-txt').value, { jogadores: elenco });
+            setTimeout(() => U.modal({
+              titulo: `Conferir (${novos.length} jogador${novos.length === 1 ? '' : 'es'})`,
+              html: `${problemas.length ? `<div class="aviso-faixa vermelha">${problemas.length} linha(s) ficam de fora:<br>${problemas.map((p) => `<small>Linha ${p.linha}: “${U.esc(p.texto)}” — ${U.esc(p.motivo)}</small>`).join('<br>')}</div>` : ''}
+                ${novos.length ? `<ul class="lista">${novos.map((p) => `<li><span class="camisa">${p.numero}</span> ${U.esc(p.nome)}${p.posicao === 'goleiro' ? ' <span class="etiqueta azul">GOL</span>' : ''}</li>`).join('')}</ul>` : '<p class="vazio">Nenhum jogador novo.</p>'}`,
+              botoes: [
+                { texto: 'Cancelar' },
+                ...(novos.length ? [{
+                  texto: `Criar ${novos.length}`, classe: 'btn-primario',
+                  acao: () => {
+                    App.inter.salvarElenco(camp, turma.id, [...elenco, ...novos.map((p) => ({ id: U.id(), numero: p.numero, nome: p.nome, posicao: p.posicao }))]);
+                    U.toast(`${novos.length} jogador(es) no elenco do ${turma.nome}!`, 'ok');
+                    App.render();
+                  },
+                }] : []),
+              ],
+            }), 0);
+          },
+        },
+      ],
+    });
   },
 };

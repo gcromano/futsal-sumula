@@ -313,7 +313,7 @@ App.telas.time = {
 
       <div class="cartao">
         <div class="linha-entre"><h2>Elenco (${time.jogadores.length})</h2>
-          <button class="btn btn-pequeno so-admin" id="btn-colar-elenco">📋 Colar elenco em texto</button></div>
+          ${inter ? `<a class="btn btn-pequeno so-admin" href="#/turma/${camp.id}/${time.turmaId}">✏️ Elenco da turma</a>` : `<button class="btn btn-pequeno so-admin" id="btn-colar-elenco">📋 Colar elenco em texto</button>`}</div>
         ${time.jogadores.length ? `<ul class="lista">
           ${time.jogadores.map((p) => {
             const alerta = R.alertaIdade(p, cat);
@@ -338,10 +338,11 @@ App.telas.time = {
         <h2>Jogos</h2>
         ${jogos.length ? jogos.map((j) => App.telas.campeonato.cartaoJogo(j, susp)).join('') : '<p class="vazio">Sem jogos na tabela.</p>'}
       </div>
-      <button class="fab so-admin" id="fab-jog" aria-label="Novo jogador">+</button>`;
+      ${inter ? '' : '<button class="fab so-admin" id="fab-jog" aria-label="Novo jogador">+</button>'}`;
 
-    document.getElementById('fab-jog').onclick = () => this.formJogador(time);
-    document.getElementById('btn-colar-elenco').onclick = () => this.colarElenco(time);
+    // Interclasse: o elenco é da turma (editado na página da turma)
+    if (!inter) document.getElementById('fab-jog').onclick = () => this.formJogador(time);
+    if (!inter) document.getElementById('btn-colar-elenco').onclick = () => this.colarElenco(time);
     if (!inter) document.getElementById('btn-editar-time').onclick = () => this.formTime(camp, cat, time);
     if (!inter) document.getElementById('btn-apagar-time').onclick = async () => {
       const temJogos = jogos.some((j) => j.sumula);

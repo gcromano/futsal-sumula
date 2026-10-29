@@ -14,6 +14,10 @@
    (time.turmaId aponta para a turma). Por isso tudo o que já existe
    (tabela, súmula, classificação, impressão) funciona igual.
 
+   ELENCO: fica na turma (camp.turmas[].jogadores = [{ id, numero, nome, posicao }])
+   e é copiado para o "time" da turma em cada modalidade (mesmos ids),
+   assim todas as súmulas usam a mesma lista.
+
    Mesma coleção, mesmas regras de segurança, mesmos admins,
    visibilidade e histórico dos campeonatos.
    ========================================================= */
@@ -65,6 +69,38 @@ App.inter = {
     App.dados.salvar();
   },
 
+  /* ---------- Elenco da turma ---------- */
+
+  /**
+   * Jogadores da turma. Interclasses criados antes do elenco por turma:
+   * adota o elenco que já existir em alguma modalidade.
+   */
+  jogadoresDaTurma(camp, turmaId) {
+    const t = (camp.turmas || []).find((x) => x.id === turmaId);
+    if (!t) return [];
+    if (!t.jogadores) {
+      const comElenco = App.dados.db.times.find((x) => x.campeonatoId === camp.id && x.turmaId === turmaId && (x.jogadores || []).length);
+      t.jogadores = comElenco ? comElenco.jogadores.map((p) => ({ id: p.id, numero: p.numero, nome: p.nome, posicao: p.posicao || 'linha' })) : [];
+    }
+    return t.jogadores;
+  },
+
+  /** Copia o elenco da turma para o "time" dela em todas as modalidades. */
+  sincronizarElenco(camp, turmaId) {
+    const lista = this.jogadoresDaTurma(camp, turmaId);
+    App.dados.db.times.filter((x) => x.campeonatoId === camp.id && x.turmaId === turmaId).forEach((x) => {
+      x.jogadores = lista.map((p) => ({ id: p.id, numero: p.numero, nome: p.nome, nascimento: '', posicao: p.posicao || 'linha' }));
+    });
+  },
+
+  /** Grava o elenco da turma (lista completa) e espalha para as modalidades. */
+  salvarElenco(camp, turmaId, jogadores) {
+    const t = camp.turmas.find((x) => x.id === turmaId);
+    t.jogadores = jogadores.slice().sort((a, b) => a.numero - b.numero);
+    this.sincronizarElenco(camp, turmaId);
+    App.dados.salvar();
+  },
+
   /** Muda nome/cor da turma e atualiza os "times" dela em todas as modalidades. */
   editarTurma(camp, turmaId, dados) {
     const t = camp.turmas.find((x) => x.id === turmaId);
@@ -113,6 +149,8 @@ App.inter = {
     };
     ['formato', 'pontosVitoria', 'pontosEmpate', 'pontosDerrota', 'idaEVolta', 'numGrupos', 'classificadosPorGrupo', 'terceiroLugar']
       .forEach((k) => { if (dados[k] !== undefined && dados[k] !== null) cat.config[k] = dados[k]; });
+    // "Permite empate" escolhido no formulário (quando o esporte deixa)
+    if (dados.permiteEmpate === false) cat.config.permiteEmpate = false;
     camp.categorias.push(cat);
     this.definirParticipantes(camp, cat, dados.turmaIds || []);
     return cat;
@@ -143,6 +181,7 @@ App.inter = {
         nome: turma.nome, cor: turma.cor || '#1f6fd1', escudo: '', bandeira: '',
         tecnico: '', responsavel: '', telefone: '', sorteio: Math.random(), jogadores: [],
       });
+      this.sincronizarElenco(camp, turmaId);
     }
     cat.turmaIds = [...quer];
     D.salvar();

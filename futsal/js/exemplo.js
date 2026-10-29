@@ -238,7 +238,7 @@ App.exemplo = {
     };
 
     // ⚽ Futsal: 4 turmas, mata-mata com disputa de 3º
-    const futsal = I.adicionarModalidade(camp, { nome: 'Futsal', emoji: '⚽', tipoPlacar: 'gols', sumulaCompleta: true, formato: 'mata', terceiroLugar: true, turmaIds: T.slice(0, 4) });
+    const futsal = I.adicionarModalidade(camp, { nome: 'Futsal', emoji: '⚽', esporte: 'futsal', formato: 'mata', terceiroLugar: true, turmaIds: T.slice(0, 4) });
     App.tabela.gerar(futsal.id, { sortear: false });
     datar(futsal, diasAtras(2), 9);
     const semisF = D.jogosDaCategoria(futsal.id).filter((j) => j.rodadaNome === 'Semifinal');
@@ -248,7 +248,7 @@ App.exemplo = {
     resultado(D.jogosDaCategoria(futsal.id).find((j) => j.rodadaNome === 'Final'), { casa: 2, fora: 3 });
 
     // 🏐 Vôlei: sets, pontos corridos, 4 turmas — tudo jogado e pódio confirmado
-    const volei = I.adicionarModalidade(camp, { nome: 'Vôlei Feminino', emoji: '🏐', tipoPlacar: 'sets', melhorDe: 3, formato: 'pontos', turmaIds: T.slice(2, 6) });
+    const volei = I.adicionarModalidade(camp, { nome: 'Vôlei Feminino', emoji: '🏐', esporte: 'volei', melhorDe: 3, formato: 'pontos', turmaIds: T.slice(2, 6) });
     App.tabela.gerar(volei.id, { sortear: false });
     datar(volei, diasAtras(1), 14);
     const placaresVolei = [[[25, 20], [25, 18]], [[22, 25], [25, 23], [15, 12]], [[25, 15], [20, 25], [10, 15]], [[25, 21], [25, 19]], [[18, 25], [25, 22], [15, 13]], [[25, 23], [25, 17]]];
@@ -259,7 +259,7 @@ App.exemplo = {
     I.definirPodio(volei, App.regras.podioSugerido(volei.id), false);
 
     // 🏀 Basquete: sem empate, mata-mata SEM 3º lugar — semis jogadas, final hoje
-    const basquete = I.adicionarModalidade(camp, { nome: 'Basquete', emoji: '🏀', tipoPlacar: 'gols', permiteEmpate: false, formato: 'mata', terceiroLugar: false, turmaIds: [T[0], T[1], T[4], T[5]] });
+    const basquete = I.adicionarModalidade(camp, { nome: 'Basquete', emoji: '🏀', esporte: 'basquete', formato: 'mata', terceiroLugar: false, turmaIds: [T[0], T[1], T[4], T[5]] });
     App.tabela.gerar(basquete.id, { sortear: false });
     datar(basquete, diasAtras(1), 9);
     D.jogosDaCategoria(basquete.id).filter((j) => j.rodadaNome === 'Semifinal').forEach((j, i) => resultado(j, i ? { casa: 18, fora: 22 } : { casa: 31, fora: 27 }));
@@ -267,7 +267,7 @@ App.exemplo = {
     finalB.data = hoje; finalB.hora = '16:00'; finalB.quadra = 'Quadra 1';
 
     // ♟️ Xadrez: V/E/D, pontos corridos com as 6 turmas — metade jogada, resto hoje
-    const xadrez = I.adicionarModalidade(camp, { nome: 'Xadrez', emoji: '♟️', tipoPlacar: 'resultado', formato: 'pontos', turmaIds: T });
+    const xadrez = I.adicionarModalidade(camp, { nome: 'Xadrez', emoji: '♟️', esporte: 'xadrez', formato: 'pontos', turmaIds: T });
     App.tabela.gerar(xadrez.id, { sortear: false });
     const jx = D.jogosDaCategoria(xadrez.id);
     jx.forEach((j, i) => {

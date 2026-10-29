@@ -200,7 +200,7 @@ App.telas.jogos = {
     if (!casa || !fora) { U.toast('O jogo ainda não tem os dois times definidos.', 'aviso'); return; }
     if (jogo.status === 'encerrado') { U.toast('Este jogo já está encerrado. Abra o jogo e use “Reabrir” para corrigir.', 'aviso', 4000); return; }
     const mata = jogo.fase === 'mata';
-    const temEventos = jogo.sumula && jogo.sumula.eventos.length;
+    const temEventos = jogo.sumula && (jogo.sumula.eventos.length || (jogo.sumula.lances || []).length);
     // Interclasse: modalidades por sets ou por vitória/empate/derrota têm janela própria
     const { cat } = D.categoria(jogo.categoriaId);
     const tipo = App.regras.tipoPlacar(cat);

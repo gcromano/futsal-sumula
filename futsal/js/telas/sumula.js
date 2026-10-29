@@ -91,8 +91,8 @@ App.telas.sumula = {
     if (jogo.placarRapido) { this.renderSimples(jogo, casa, fora, 'rapido'); return; }
     // Visitante abrindo jogo que ainda não começou
     if (!jogo.sumula && !this.pode) { this.renderSimples(jogo, casa, fora, 'agendado'); return; }
-    // Interclasse: modalidades sem súmula completa usam só o "lançar resultado"
-    if (D.ehInterclasse(camp) && !cat.config.sumulaCompleta) { this.renderSimples(jogo, casa, fora, 'agendado'); return; }
+    // Interclasse: cada esporte tem a sua súmula (vôlei, basquete...). Futsal usa a desta tela.
+    if (App.sumulaEsporte.atende(camp, cat)) { App.sumulaEsporte.render(jogo); return; }
 
     // Súmula nova fica só na memória: é gravada na primeira ação (iniciar, gol...)
     if (!jogo.sumula) jogo.sumula = R.novaSumula(jogo);

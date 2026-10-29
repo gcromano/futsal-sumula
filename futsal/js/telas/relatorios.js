@@ -31,7 +31,8 @@ App.telas.relatorios = {
       if (!jogo) { App.ir('#/'); return; }
       voltar = `#/sumula/${jogo.id}`;
       titulo = 'Súmula oficial';
-      html = this.sumula(jogo);
+      // Súmula oficial do esporte (interclasse); futsal e campeonatos usam a de sempre
+      html = jogo.sumula && jogo.sumula.esporte ? App.sumulaEsporte.htmlImpressao(jogo) : this.sumula(jogo);
     } else {
       const { camp, cat } = D.categoria(id);
       if (!cat) { App.ir('#/'); return; }

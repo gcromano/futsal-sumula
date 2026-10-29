@@ -150,10 +150,9 @@ Se o aparelho tinha dados da versão antiga (sem nuvem), aparece na tela inicial
 turmas (uma por linha). Quem cria vira admin; admins, histórico e segurança funcionam igual aos campeonatos.
 
 1. **Turmas** (aba Turmas): cadastradas uma vez e usadas em todas as modalidades. Nome e cor. Dá para colar a lista.
-2. **Modalidades** (aba Modalidades → **+**): escolha uma sugestão ou digite nome + emoji, e defina:
-   - **Tipo de placar:** *gols/pontos* (com ou sem empate — basquete sem), *sets* (vôlei, melhor de 3 ou 5) ou
-     *vitória/empate/derrota* (xadrez, tênis de mesa).
-   - **Súmula completa** (gols, faltas, cartões, cronômetro) só para futsal; nas outras o lançamento é o ⚡ resultado.
+2. **Modalidades** (aba Modalidades → **+**): escolha o **esporte** (Futsal, Vôlei, Basquete, Handebol, Tênis de mesa,
+   Xadrez ou Outro). O esporte define o placar, a súmula e as regras oficiais padrão, que dá para mudar na aba
+   **Config.** da modalidade (card “Regras do jogo”).
    - Formato (pontos corridos, grupos + mata-mata, só mata-mata), 3º lugar, pontos por V/E/D e **quais turmas jogam**.
 3. Cada modalidade abre como um campeonato: **tabela** gerada, manual ou colada, **classificação** (no vôlei com
    SV/SP = sets vencidos/perdidos, SS = saldo de sets, PS = saldo de pontos), mata-mata com “Vencedor do jogo X”.
@@ -165,8 +164,29 @@ turmas (uma por linha). Quem cria vira admin; admins, histórico e segurança fu
 6. **Jogos de hoje**: todos os jogos do dia, de todas as modalidades, em ordem de horário.
 7. **Página da turma**: medalhas, modalidades e todos os jogos dela.
 8. **Imprimir/PDF**: quadro de medalhas (aba Medalhas → 🖨️), e tabela e classificação de cada modalidade.
+9. **Elenco da turma** (página da turma → Elenco): número + nome, com “colar elenco”. É o mesmo elenco em todas as
+   modalidades e súmulas.
 
-Para testar: 💾 → **Adicionar interclasse de exemplo** (futsal, vôlei por sets, basquete e xadrez).
+### Súmula de cada esporte
+
+Todas têm: cronômetro (quando o esporte usa), linha do tempo com editar/apagar, observações, arbitragem,
+encerrar/reabrir, funcionam offline e imprimem a súmula oficial do esporte. O ⚡ resultado rápido continua valendo.
+
+- **Futsal:** a súmula de sempre (igual à dos campeonatos).
+- **Vôlei:** sets de 25 (decisivo 15), 2 de diferença, melhor de 3/5, saque com troca na virada, rodízio I–VI
+  opcional, substituições (limite 6), 2 tempos por set, sanções (penalidade = ponto do adversário), troca de lado
+  aos 8 no set decisivo, aviso de fim de set e líbero.
+- **Basquete:** 4 quartos de 10 min (ou 2 tempos), prorrogação de 5 min, +1/+2/+3 por jogador, faltas pessoais
+  (a 5ª desqualifica), técnica e antidesportiva, faltas de equipe com bônus a partir da 5ª, tempos (2 no 1º tempo,
+  3 no 2º), seta de posse. Não termina empatado.
+- **Handebol:** 2×30 min, gols, tiros de 7 m, advertência, exclusão de 2 min com contagem regressiva (3ª =
+  desqualificação), vermelho, tempos de equipe (3 por jogo, no máximo 2 por tempo).
+- **Tênis de mesa:** sets de 11 com 2 de diferença, melhor de 3/5, troca de saque a cada 2 pontos (a cada 1 no
+  10×10), duplas opcional.
+- **Xadrez:** quem jogou de brancas, vitória das brancas/pretas ou empate, motivo e tempos do relógio.
+- **Outro:** placar simples (+1/−1) e eventos livres em texto.
+
+Para testar: 💾 → **Adicionar interclasse de exemplo** (futsal, vôlei, basquete e xadrez).
 
 ---
 
@@ -268,7 +288,8 @@ js/
     jogos.js            → adicionar/editar/organizar jogos, colar tabela, resultado (gols/sets/V-E-D)
     interclasse.js      → telas do interclasse: medalhas, modalidades, hoje, turmas, pódio
     time.js             → página do time e do jogador (e seus formulários)
-    sumula.js           → súmula ao vivo
+    sumula.js           → súmula ao vivo (futsal)
+    sumula-esportes.js  → súmulas do interclasse: vôlei, basquete, handebol, tênis de mesa, xadrez, outro
     relatorios.js       → páginas para imprimir/PDF
     backup.js           → exportar, importar, exemplo, apagar tudo
 ```
